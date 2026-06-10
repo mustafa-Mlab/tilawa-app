@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AyahDetail } from "@/lib/quran";
-import { Play, Pause, Bookmark, Copy, Check, Share2 } from "lucide-react";
+import { Play, Pause, Bookmark, Copy, Check } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
 
 interface AyahCardProps {

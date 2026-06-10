@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SurahInfo } from "@/lib/quran";
 import { SurahCard } from "./SurahCard";
-import { Search, Compass, BookOpen, Clock, ChevronRight } from "lucide-react";
+import { Search, BookOpen, Clock, ChevronRight } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
 import Link from "next/link";
 
@@ -117,7 +117,7 @@ export function SurahList({ surahs }: SurahListProps) {
             No Surahs Found
           </h3>
           <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
-            We couldn't find any Surah matching "{searchQuery}". Try searching for another name or number.
+            We couldn&apos;t find any Surah matching &quot;{searchQuery}&quot;. Try searching for another name or number.
           </p>
         </div>
       )}

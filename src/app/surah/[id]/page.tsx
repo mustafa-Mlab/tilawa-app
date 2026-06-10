@@ -1,6 +1,6 @@
 import { getSurah } from "@/lib/quran";
 import { AyahCard } from "@/components/AyahCard";
-import { ChevronLeft, ChevronRight, Home, Compass, BookOpen, Play } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Compass, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { InitializeLastRead } from "./InitializeLastRead";

@@ -9,7 +9,7 @@ export default async function Home() {
 
   try {
     surahs = await getSurahList();
-  } catch (err: any) {
+  } catch (err) {
     console.error("Error loading surahs:", err);
     errorMsg = "Unable to load the Quranic Surah list. Please check your internet connection and try again.";
   }

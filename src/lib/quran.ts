@@ -56,7 +56,15 @@ export async function getSurah(id: number): Promise<SurahDetailResponse> {
   const englishSurah = dataList[1];
   const banglaSurah = dataList[2];
 
-  const ayahs: AyahDetail[] = arabicSurah.ayahs.map((arabicAyah: any, idx: number) => {
+  interface RawAyah {
+    number: number;
+    numberInSurah: number;
+    text: string;
+    juz: number;
+    page: number;
+  }
+
+  const ayahs: AyahDetail[] = arabicSurah.ayahs.map((arabicAyah: RawAyah, idx: number) => {
     let arText = arabicAyah.text;
     const bismillah = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
     

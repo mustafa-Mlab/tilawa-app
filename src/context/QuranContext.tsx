@@ -1,6 +1,7 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import { getAyahAudioUrl } from "@/lib/quran";
 
 export interface Reciter {
@@ -77,8 +78,6 @@ interface QuranContextProps {
 const QuranContext = createContext<QuranContextProps | undefined>(undefined);
 
 export function QuranProvider({ children }: { children: React.ReactNode }) {
-  // Persistence flags
-  const [isLoaded, setIsLoaded] = useState(false);
 
   // Audio state
   const [currentSurahId, setCurrentSurahId] = useState<number | null>(null);
@@ -138,7 +137,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {
         console.error("Error loading localStorage settings", e);
       }
-      setIsLoaded(true);
+
     }
   }, []);
 
@@ -150,55 +149,6 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     }
   }, [playbackRate, volume]);
 
-  // Audio setup and event listeners
-  useEffect(() => {
-    audioRef.current = new Audio();
-
-    const audio = audioRef.current;
-
-    const onPlay = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onTimeUpdate = () => {
-      if (audio.duration) {
-        setCurrentTime(audio.currentTime);
-        setProgress((audio.currentTime / audio.duration) * 100);
-      }
-    };
-    const onDurationChange = () => {
-      setDuration(audio.duration || 0);
-    };
-    const onEnded = () => {
-      setIsPlaying(false);
-      setProgress(100);
-      
-      // Auto-trigger next ayah if autoplay is enabled
-      if (autoplayNext) {
-        handleNextAyah();
-      }
-    };
-    const onError = (e: any) => {
-      console.error("Audio playback error:", e);
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener("play", onPlay);
-    audio.addEventListener("pause", onPause);
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("durationchange", onDurationChange);
-    audio.addEventListener("ended", onEnded);
-    audio.addEventListener("error", onError);
-
-    return () => {
-      audio.pause();
-      audio.removeEventListener("play", onPlay);
-      audio.removeEventListener("pause", onPause);
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("durationchange", onDurationChange);
-      audio.removeEventListener("ended", onEnded);
-      audio.removeEventListener("error", onError);
-    };
-  }, [autoplayNext, activeSurahAyahs, currentAyahNumber]);
-
   // Helpers to save settings
   const saveSetting = (key: string, value: string) => {
     if (typeof window !== "undefined") {
@@ -209,9 +159,10 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   const setReciter = (id: string) => {
     setReciterState(id);
     saveSetting("tilawa_reciter", id);
+    
     // If playing, switch reciter for current Ayah instantly
     if (currentAyahNumber && audioRef.current) {
-      const isCurrentlyPlaying = isPlaying;
+      const isCurrentlyPlaying = !audioRef.current.paused && !audioRef.current.ended;
       audioRef.current.src = getAyahAudioUrl(currentAyahNumber, id);
       audioRef.current.load();
       if (isCurrentlyPlaying) {
@@ -263,11 +214,11 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     saveSetting("tilawa_bookmarks", JSON.stringify(nextBookmarks));
   };
 
-  const updateLastRead = (surahId: number, surahName: string, ayahNumberInSurah: number) => {
+  const updateLastRead = useCallback((surahId: number, surahName: string, ayahNumberInSurah: number) => {
     const val: LastRead = { surahId, surahName, ayahNumberInSurah };
     setLastRead(val);
     saveSetting("tilawa_last_read", JSON.stringify(val));
-  };
+  }, []);
 
   // Main playback controls
   const playAyah = (
@@ -284,7 +235,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
 
     // If it's already the same ayah, toggle play/pause
     if (currentAyahNumber === ayahNumber) {
-      if (isPlaying) {
+      if (!audioRef.current.paused && !audioRef.current.ended) {
         audioRef.current.pause();
       } else {
         audioRef.current.play().catch(err => console.error("Resume playback failed", err));
@@ -313,13 +264,13 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   };
 
   const pauseAudio = () => {
-    if (audioRef.current && isPlaying) {
+    if (audioRef.current) {
       audioRef.current.pause();
     }
   };
 
   const resumeAudio = () => {
-    if (audioRef.current && !isPlaying && currentAyahNumber) {
+    if (audioRef.current && currentAyahNumber) {
       audioRef.current.play().catch(err => console.error("Play failed", err));
     }
   };
@@ -335,6 +286,8 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     setCurrentAyahNumber(null);
     setCurrentAyahNumberInSurah(null);
     setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
   };
 
   const seekTo = (time: number) => {
@@ -373,6 +326,35 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         playAyah(prev.number, prev.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
       }
     }
+  };
+
+  // Audio HTML events mapped to React callbacks
+  const handleTimeUpdate = () => {
+    if (audioRef.current && audioRef.current.duration) {
+      setCurrentTime(audioRef.current.currentTime);
+      setProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
+    }
+  };
+
+  const handleDurationChange = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration || 0);
+    }
+  };
+
+  const handleEnded = () => {
+    setIsPlaying(false);
+    setProgress(100);
+    
+    // Auto-trigger next ayah if autoplay is enabled
+    if (autoplayNext) {
+      handleNextAyah();
+    }
+  };
+
+  const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
+    console.error("Audio playback error:", e);
+    setIsPlaying(false);
   };
 
   return (
@@ -416,6 +398,16 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
+      <audio
+        ref={audioRef}
+        preload="auto"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onTimeUpdate={handleTimeUpdate}
+        onDurationChange={handleDurationChange}
+        onEnded={handleEnded}
+        onError={handleError}
+      />
     </QuranContext.Provider>
   );
 }
