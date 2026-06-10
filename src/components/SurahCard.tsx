@@ -56,7 +56,7 @@ export function SurahCard({ surah }: SurahCardProps) {
       {/* Arabic Surah Name */}
       <div className="flex flex-col items-end gap-1 pl-2">
         <span
-          className="text-2xl font-bold font-arabic text-emerald-600 dark:text-emerald-400 tracking-normal group-hover:scale-105 transition-transform duration-300"
+          className="text-3xl font-extrabold font-arabic text-emerald-600 dark:text-emerald-400 tracking-normal group-hover:scale-105 transition-transform duration-300"
           dir="rtl"
         >
           {surah.name}

@@ -1,5 +1,6 @@
 import { getSurahList, SurahInfo } from "@/lib/quran";
 import { SurahList } from "@/components/SurahList";
+import { ErrorState } from "@/components/ErrorState";
 import { Sparkles } from "lucide-react";
 
 // The home page is rendered server-side and fetched statically
@@ -32,9 +33,7 @@ export default async function Home() {
 
       {/* Main Content Area */}
       {errorMsg ? (
-        <div className="text-center p-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-md mx-auto">
-          <p className="text-rose-500 text-sm font-semibold">{errorMsg}</p>
-        </div>
+        <ErrorState message={errorMsg} showHomeButton={false} />
       ) : (
         <SurahList surahs={surahs} />
       )}
