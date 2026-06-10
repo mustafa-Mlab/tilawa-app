@@ -14,9 +14,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   try {
     const surahId = parseInt(id, 10);
     const surah = await getSurah(surahId);
+    const title = `Surah ${surah.englishName} (${surah.name}) - Tilawa App`;
+    const description = `Read and listen to Surah ${surah.englishName} (${surah.englishNameTranslation}) translation in English and Bangla with audio recitations.`;
     return {
-      title: `Surah ${surah.englishName} (${surah.name}) - Tilawa App`,
-      description: `Read and listen to Surah ${surah.englishName} (${surah.englishNameTranslation}) translation in English and Bangla with audio recitations.`,
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url: `https://tilawa-app.vercel.app/surah/${surahId}`,
+        type: "article",
+        images: [
+          {
+            url: "/og-image.png",
+            width: 1200,
+            height: 630,
+            alt: title,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: ["/og-image.png"],
+      },
     };
   } catch {
     return {
@@ -155,7 +177,7 @@ export default async function SurahPage({ params }: PageProps) {
       {/* Bismillah Header Block */}
       {showBismillah && (
         <div className="text-center py-10" dir="rtl">
-          <p className="font-arabic text-3xl font-bold text-zinc-800 dark:text-zinc-100 leading-normal select-none tracking-normal">
+          <p className="font-arabic text-3xl font-bold text-zinc-800 dark:text-zinc-100 leading-loose select-none tracking-normal">
             بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
           </p>
         </div>

@@ -190,7 +190,7 @@ export function AudioPlayer() {
           {/* Autoplay Next Toggle */}
           <button
             onClick={() => setAutoplayNext(!autoplayNext)}
-            className={`flex h-8 px-2.5 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
+            className={`flex h-9.5 px-3 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
               autoplayNext
                 ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
                 : "border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"
@@ -205,7 +205,7 @@ export function AudioPlayer() {
           <div className="relative">
             <button
               onClick={() => setShowSpeedMenu(!showSpeedMenu)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-all"
+              className="flex h-9.5 w-9.5 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-all"
               title="Playback speed"
             >
               <Gauge className="h-4.5 w-4.5" />
@@ -233,11 +233,11 @@ export function AudioPlayer() {
             )}
           </div>
 
-          {/* Volume Control */}
-          <div className="flex items-center gap-1.5 group/vol">
+          {/* Volume Control (hidden on mobile, uses physical side buttons) */}
+          <div className="hidden sm:flex items-center gap-1.5 group/vol">
             <button
               onClick={toggleMute}
-              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-all"
+              className="flex h-9.5 w-9.5 items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:text-white transition-all"
               title="Volume"
             >
               {volume === 0 ? <VolumeX className="h-4.5 w-4.5 text-zinc-400" /> : <Volume2 className="h-4.5 w-4.5" />}
@@ -256,7 +256,7 @@ export function AudioPlayer() {
           {/* Close Player */}
           <button
             onClick={stopAudio}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-zinc-200/50 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600 dark:border-zinc-800 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/30 dark:hover:text-rose-400 transition-all text-zinc-400"
+            className="flex h-9.5 w-9.5 items-center justify-center rounded-lg border border-zinc-200/50 hover:bg-rose-50 hover:border-rose-100 hover:text-rose-600 dark:border-zinc-800 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/30 dark:hover:text-rose-400 transition-all text-zinc-400"
             title="Close Player"
           >
             <X className="h-4.5 w-4.5" />

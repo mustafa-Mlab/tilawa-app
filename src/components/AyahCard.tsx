@@ -45,7 +45,7 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
   };
 
   return (
-    <div
+    <article
       id={`ayah-${ayah.numberInSurah}`}
       className={`group relative flex flex-col p-6 rounded-2xl border transition-all duration-350 ${
         isCurrentPlaying
@@ -68,11 +68,11 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
         </span>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {/* Play/Pause Button */}
           <button
             onClick={handlePlay}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+            className={`flex h-9.5 w-9.5 items-center justify-center rounded-lg transition-all ${
               isCurrentPlaying
                 ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
                 : "hover:bg-zinc-50 text-zinc-600 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
@@ -89,7 +89,7 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
           {/* Bookmark Button */}
           <button
             onClick={() => toggleBookmark(ayah.number)}
-            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+            className={`flex h-9.5 w-9.5 items-center justify-center rounded-lg transition-all ${
               isBookmarked
                 ? "text-rose-500 dark:text-rose-400"
                 : "hover:bg-zinc-50 text-zinc-400 hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-white"
@@ -102,7 +102,7 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
           {/* Copy Button */}
           <button
             onClick={handleCopy}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-zinc-50 text-zinc-400 hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-white transition-all"
+            className="flex h-9.5 w-9.5 items-center justify-center rounded-lg hover:bg-zinc-50 text-zinc-400 hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-white transition-all"
             aria-label="Copy Ayah"
           >
             {copied ? <Check className="h-4 w-4 text-emerald-500 stroke-[2.5]" /> : <Copy className="h-4 w-4" />}
@@ -152,6 +152,6 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
           </div>
         )}
       </div>
-    </div>
+    </article>
   );
 }
