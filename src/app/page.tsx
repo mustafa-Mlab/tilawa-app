@@ -1,65 +1,43 @@
-import Image from "next/image";
+import { getSurahList, SurahInfo } from "@/lib/quran";
+import { SurahList } from "@/components/SurahList";
+import { Sparkles } from "lucide-react";
 
-export default function Home() {
+// The home page is rendered server-side and fetched statically
+export default async function Home() {
+  let surahs: SurahInfo[] = [];
+  let errorMsg = "";
+
+  try {
+    surahs = await getSurahList();
+  } catch (err: any) {
+    console.error("Error loading surahs:", err);
+    errorMsg = "Unable to load the Quranic Surah list. Please check your internet connection and try again.";
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="space-y-10 animate-fade-in-up">
+      {/* Decorative Title Banner */}
+      <div className="text-center space-y-3 py-4">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100/50 dark:border-emerald-900/30 text-xs font-bold tracking-wide uppercase">
+          <Sparkles className="h-3.5 w-3.5 fill-current" />
+          <span>Contemplate the Words of Allah</span>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-zinc-900 dark:text-white">
+          The Noble Quran
+        </h1>
+        <p className="text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+          Read, search, listen to beautiful audio recitations by renowned reciters, and adjust typography for your reading comfort.
+        </p>
+      </div>
+
+      {/* Main Content Area */}
+      {errorMsg ? (
+        <div className="text-center p-8 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-md mx-auto">
+          <p className="text-rose-500 text-sm font-semibold">{errorMsg}</p>
         </div>
-      </main>
+      ) : (
+        <SurahList surahs={surahs} />
+      )}
     </div>
   );
 }
