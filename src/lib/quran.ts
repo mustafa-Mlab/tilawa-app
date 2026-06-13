@@ -98,6 +98,24 @@ export async function getSurah(id: number): Promise<SurahDetailResponse> {
   };
 }
 
+const RECITER_BITRATES: Record<string, number> = {
+  "ar.alafasy": 128,
+  "ar.abdurrahmaansudais": 64,
+  "ar.mahermuaiqly": 128,
+  "ar.husary": 128,
+  "ar.minshawi": 128,
+  "ar.abdulbasitmurattal": 64,
+  "ar.shaatree": 128,
+  "ar.ahmedajamy": 128,
+  "ar.hudhaify": 128,
+  "ar.muhammadayyoub": 128,
+  "ar.saoodshuraym": 64,
+  "ar.abdulsamad": 64,
+  "ar.abdullahbasfar": 64,
+  "ar.hanirifai": 64,
+};
+
 export function getAyahAudioUrl(ayahNumber: number, reciter = "ar.alafasy") {
-  return `https://cdn.islamic.network/quran/audio/128/${reciter}/${ayahNumber}.mp3`;
+  const bitrate = RECITER_BITRATES[reciter] || 128;
+  return `/api/audio/${bitrate}/${reciter}/${ayahNumber}.mp3`;
 }

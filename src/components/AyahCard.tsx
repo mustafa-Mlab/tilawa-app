@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AyahDetail } from "@/lib/quran";
 import { Play, Pause, Bookmark, Copy, Check } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
@@ -29,6 +29,18 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
 
   const isCurrentPlaying = currentAyahNumber === ayah.number;
   const isBookmarked = bookmarks.includes(ayah.number);
+
+  useEffect(() => {
+    if (isCurrentPlaying) {
+      const element = document.getElementById(`ayah-${ayah.numberInSurah}`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }
+    }
+  }, [isCurrentPlaying, ayah.numberInSurah]);
 
   const handlePlay = () => {
     playAyah(ayah.number, ayah.numberInSurah, surahId, surahName, surahAyahs);

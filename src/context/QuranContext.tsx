@@ -13,9 +13,18 @@ export interface Reciter {
 export const RECITERS: Reciter[] = [
   { id: "ar.alafasy", name: "مشاري راشد العفاسي", englishName: "Mishary Rashid Alafasy" },
   { id: "ar.abdurrahmaansudais", name: "عبد الرحمن السديس", englishName: "Abdurrahman As-Sudais" },
-  { id: "ar.maheralmuaiqly", name: "ماهر المعيقلي", englishName: "Maher Al-Muaiqly" },
+  { id: "ar.mahermuaiqly", name: "ماهر المعيقلي", englishName: "Maher Al-Muaiqly" },
   { id: "ar.husary", name: "محمود خليل الحصري", englishName: "Mahmoud Khalil Al-Husary" },
   { id: "ar.minshawi", name: "محمد صديق المنشاوي", englishName: "Mohamed Siddiq Al-Minshawi" },
+  { id: "ar.abdulbasitmurattal", name: "عبد الباسط عبد الصمد (مرتل)", englishName: "Abdul Basit (Murattal)" },
+  { id: "ar.shaatree", name: "أبو بكر الشاطري", englishName: "Abu Bakr Ash-Shaatree" },
+  { id: "ar.ahmedajamy", name: "أحمد بن علي العجمي", englishName: "Ahmed Al-Ajamy" },
+  { id: "ar.hudhaify", name: "علي بن عبد الرحمن الحذيفي", englishName: "Ali Al-Hudhaify" },
+  { id: "ar.muhammadayyoub", name: "محمد أيوب", englishName: "Muhammad Ayyoub" },
+  { id: "ar.saoodshuraym", name: "سعود الشريم", englishName: "Sa'ud Al-Shuraim" },
+  { id: "ar.abdulsamad", name: "عبد الباسط عبد الصمد", englishName: "Abdul Samad" },
+  { id: "ar.abdullahbasfar", name: "عبد الله بصفر", englishName: "Abdullah Basfar" },
+  { id: "ar.hanirifai", name: "هاني الرفاعي", englishName: "Hani Ar-Rifai" },
 ];
 
 export interface LastRead {
