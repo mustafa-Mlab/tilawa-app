@@ -55,6 +55,7 @@ interface QuranContextProps {
   // Visual settings
   arabicFontSize: number; // in px
   translationFontSize: number; // in px
+  tafsirFontSize: number; // in px
   showEnglish: boolean;
   showBangla: boolean;
 
@@ -83,6 +84,7 @@ interface QuranContextProps {
   updateLastRead: (surahId: number, surahName: string, ayahNumberInSurah: number) => void;
   setArabicFontSize: (size: number) => void;
   setTranslationFontSize: (size: number) => void;
+  setTafsirFontSize: (size: number) => void;
   setShowEnglish: (val: boolean) => void;
   setShowBangla: (val: boolean) => void;
   seekTo: (time: number) => void;
@@ -117,6 +119,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   // Visual state
   const [arabicFontSize, setArabicFontSizeState] = useState(36); // px
   const [translationFontSize, setTranslationFontSizeState] = useState(16); // px
+  const [tafsirFontSize, setTafsirFontSizeState] = useState(14); // px
   const [showEnglish, setShowEnglishState] = useState(true);
   const [showBangla, setShowBanglaState] = useState(true);
 
@@ -142,6 +145,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         const storedPlayEnglishAudio = localStorage.getItem("tilawa_play_english_audio");
         const storedArSize = localStorage.getItem("tilawa_ar_size");
         const storedEnSize = localStorage.getItem("tilawa_en_size");
+        const storedTafsirSize = localStorage.getItem("tilawa_tafsir_size");
         const storedShowEn = localStorage.getItem("tilawa_show_en");
         const storedShowBn = localStorage.getItem("tilawa_show_bn");
         const storedBookmarks = localStorage.getItem("tilawa_bookmarks");
@@ -155,6 +159,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         if (storedPlayEnglishAudio) setPlayEnglishAudioState(storedPlayEnglishAudio === "true");
         if (storedArSize) setArabicFontSizeState(parseInt(storedArSize));
         if (storedEnSize) setTranslationFontSizeState(parseInt(storedEnSize));
+        if (storedTafsirSize) setTafsirFontSizeState(parseInt(storedTafsirSize));
         if (storedShowEn) setShowEnglishState(storedShowEn === "true");
         if (storedShowBn) setShowBanglaState(storedShowBn === "true");
         if (storedBookmarks) setBookmarks(JSON.parse(storedBookmarks));
@@ -231,6 +236,11 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   const setTranslationFontSize = (size: number) => {
     setTranslationFontSizeState(size);
     saveSetting("tilawa_en_size", size.toString());
+  };
+
+  const setTafsirFontSize = (size: number) => {
+    setTafsirFontSizeState(size);
+    saveSetting("tilawa_tafsir_size", size.toString());
   };
 
   const setShowEnglish = (val: boolean) => {
@@ -598,6 +608,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         playEnglishAudio,
         arabicFontSize,
         translationFontSize,
+        tafsirFontSize,
         showEnglish,
         showBangla,
         bookmarks,
@@ -616,6 +627,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         updateLastRead,
         setArabicFontSize,
         setTranslationFontSize,
+        setTafsirFontSize,
         setShowEnglish,
         setShowBangla,
         seekTo,

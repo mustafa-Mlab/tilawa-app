@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Amiri } from "next/font/google";
 import "./globals.scss";
 import { Providers } from "@/components/Providers";
 import { Navbar } from "@/components/Navbar";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,6 +75,7 @@ export default function RootLayout({
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
             {children}
           </main>
+          <MobileBottomNav />
           <footer className="w-full border-t border-zinc-200/50 bg-white/30 dark:border-zinc-800/50 dark:bg-zinc-950/30 py-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <p>

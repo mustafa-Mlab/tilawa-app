@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages, Music, Play, Repeat } from "lucide-react";
+import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages, Music, Play, Repeat, Heart } from "lucide-react";
 import { useQuran, RECITERS } from "@/context/QuranContext";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -12,6 +13,8 @@ export function Navbar() {
     setArabicFontSize,
     translationFontSize,
     setTranslationFontSize,
+    tafsirFontSize,
+    setTafsirFontSize,
     showEnglish,
     setShowEnglish,
     showBangla,
@@ -26,6 +29,9 @@ export function Navbar() {
     playEnglishAudio,
     setPlayEnglishAudio,
   } = useQuran();
+
+  const pathname = usePathname();
+  const isRouteActive = (path: string) => pathname === path;
 
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -44,20 +50,48 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-200/50 bg-white/70 backdrop-blur-md dark:border-zinc-800/50 dark:bg-zinc-950/70 transition-all duration-200">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {/* Branding Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
-            <BookOpen className="h-5.5 w-5.5 text-white" />
-          </div>
-          <div className="flex flex-col">
-            <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-none">
-              Tilawa App
-            </span>
-            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-              Read & Listen Quran
-            </span>
-          </div>
-        </Link>
+        {/* Branding Logo & Navigation Wrapper */}
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
+              <BookOpen className="h-5.5 w-5.5 text-white" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white leading-none">
+                Tilawa App
+              </span>
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
+                Read & Listen Quran
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-1 bg-zinc-50 dark:bg-zinc-900/60 p-1 rounded-xl border border-zinc-250/30 dark:border-zinc-800/30">
+            <Link
+              href="/"
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                isRouteActive("/")
+                  ? "bg-white text-emerald-600 shadow-xs dark:bg-zinc-800 dark:text-emerald-400"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Quran</span>
+            </Link>
+            <Link
+              href="/dua-remembrance"
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 ${
+                isRouteActive("/dua-remembrance")
+                  ? "bg-white text-emerald-600 shadow-xs dark:bg-zinc-800 dark:text-emerald-400"
+                  : "text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
+              }`}
+            >
+              <Heart className="h-3.5 w-3.5" />
+              <span>Dua & Remembrance</span>
+            </Link>
+          </nav>
+        </div>
 
         {/* Global Controls */}
         <div className="flex items-center gap-3">
@@ -124,6 +158,26 @@ export function Navbar() {
                       step="1"
                       value={translationFontSize}
                       onChange={(e) => setTranslationFontSize(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer dark:bg-zinc-800 accent-emerald-500 dark:accent-emerald-400"
+                    />
+                  </div>
+
+                  {/* Tafsir Size Slider */}
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="flex items-center gap-1 text-zinc-500 dark:text-zinc-400">
+                        <Type className="h-3.5 w-3.5" />
+                        Tafsir Size
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{tafsirFontSize}px</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="24"
+                      step="1"
+                      value={tafsirFontSize}
+                      onChange={(e) => setTafsirFontSize(parseInt(e.target.value))}
                       className="w-full h-1.5 bg-zinc-100 rounded-lg appearance-none cursor-pointer dark:bg-zinc-800 accent-emerald-500 dark:accent-emerald-400"
                     />
                   </div>

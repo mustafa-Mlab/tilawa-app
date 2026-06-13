@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { AyahDetail } from "@/lib/quran";
-import { Play, Pause, Bookmark, Copy, Check } from "lucide-react";
+import { Play, Pause, Bookmark, Copy, Check, BookOpen } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
 
 interface AyahCardProps {
@@ -21,11 +21,15 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
     toggleBookmark,
     arabicFontSize,
     translationFontSize,
+    tafsirFontSize,
     showEnglish,
     showBangla,
   } = useQuran();
 
   const [copied, setCopied] = useState(false);
+  const [showTafsir, setShowTafsir] = useState(false);
+  const [loadingTafsir, setLoadingTafsir] = useState(false);
+  const [tafsirData, setTafsirData] = useState<{ english: string; bangla: string } | null>(null);
 
   const isCurrentPlaying = currentAyahNumber === ayah.number;
   const isBookmarked = bookmarks.includes(ayah.number);
@@ -54,6 +58,55 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
     navigator.clipboard.writeText(textToCopy);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const toggleTafsir = async () => {
+    if (showTafsir) {
+      setShowTafsir(false);
+      return;
+    }
+
+    setShowTafsir(true);
+
+    if (tafsirData) return; // already fetched
+
+    setLoadingTafsir(true);
+    try {
+      console.log(`[Tafsir] Fetching Tafsir for Surah ${surahId}, Ayah ${ayah.numberInSurah}...`);
+      const [engRes, bngRes] = await Promise.all([
+        fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/en-tafisr-ibn-kathir/${surahId}.json`),
+        fetch(`https://cdn.jsdelivr.net/gh/spa5k/tafsir_api@main/tafsir/bn-tafsir-ahsanul-bayaan/${surahId}.json`)
+      ]);
+
+      console.log(`[Tafsir] Fetch status - English: ${engRes.status}, Bangla: ${bngRes.status}`);
+
+      if (!engRes.ok || !bngRes.ok) {
+        throw new Error(`Failed to fetch Tafsir. Status - English: ${engRes.status}, Bangla: ${bngRes.status}`);
+      }
+
+      const engList = await engRes.json();
+      const bngList = await bngRes.json();
+
+      console.log(`[Tafsir] Data sizes - English: ${engList?.length}, Bangla: ${bngList?.length}`);
+
+      const engAyah = engList.find((item: any) => item.ayah === ayah.numberInSurah);
+      const bngAyah = bngList.find((item: any) => item.ayah === ayah.numberInSurah);
+
+      console.log(`[Tafsir] Search results - English text length: ${engAyah?.text?.length || 0}, Bangla text length: ${bngAyah?.text?.length || 0}`);
+
+      setTafsirData({
+        english: engAyah ? engAyah.text : "No English Tafsir available for this verse.",
+        bangla: bngAyah ? bngAyah.text : "কোনো বাংলা তাফসীর পাওয়া যায়নি।"
+      });
+    } catch (error) {
+      console.error("[Tafsir] Fetch failed:", error);
+      setTafsirData({
+        english: "Failed to load English Tafsir. Please check your internet connection.",
+        bangla: "বাংলা তাফসীর লোড করা যায়নি। অনুগ্রহ করে আপনার ইন্টারনেট কানেকশন চেক করুন।"
+      });
+    } finally {
+      setLoadingTafsir(false);
+    }
   };
 
   return (
@@ -119,6 +172,20 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
           >
             {copied ? <Check className="h-4 w-4 text-emerald-500 stroke-[2.5]" /> : <Copy className="h-4 w-4" />}
           </button>
+
+          {/* Tafsir Button */}
+          <button
+            onClick={toggleTafsir}
+            className={`flex h-9.5 px-3 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
+              showTafsir
+                ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 text-zinc-600 hover:text-zinc-955 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
+            }`}
+            aria-label="Toggle Tafsir"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Tafsir</span>
+          </button>
         </div>
       </div>
 
@@ -161,6 +228,51 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
             >
               {ayah.banglaText}
             </p>
+          </div>
+        )}
+
+        {/* Tafsir Panel */}
+        {showTafsir && (
+          <div className="pt-5 border-t border-dashed border-zinc-200 dark:border-zinc-800 space-y-4 animate-fade-in">
+            <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+              <BookOpen className="h-4 w-4" />
+              <span>Ayah Tafsir (Explanation)</span>
+            </h4>
+
+            {loadingTafsir ? (
+              <div className="flex items-center gap-2 text-zinc-400 py-3 text-xs">
+                <span className="h-4 w-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                <span>Loading Bangla & English Tafsir...</span>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {/* Bangla Tafsir */}
+                <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-150/60 dark:border-zinc-900/60 space-y-1.5">
+                  <span className="text-[9px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest block">
+                    বাংলা তাফসীর (আহসানুল বায়ান)
+                  </span>
+                  <p 
+                    className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line select-all"
+                    style={{ fontSize: `${tafsirFontSize}px` }}
+                  >
+                    {tafsirData?.bangla}
+                  </p>
+                </div>
+
+                {/* English Tafsir */}
+                <div className="p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-950/20 border border-zinc-150/60 dark:border-zinc-900/60 space-y-1.5">
+                  <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest block">
+                    English Tafsir (Ibn Kathir)
+                  </span>
+                  <p 
+                    className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line select-all"
+                    style={{ fontSize: `${tafsirFontSize}px` }}
+                  >
+                    {tafsirData?.english}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
