@@ -23,6 +23,8 @@ export function Navbar() {
     setAutoplayNext,
     loop,
     setLoop,
+    playEnglishAudio,
+    setPlayEnglishAudio,
   } = useQuran();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -224,6 +226,28 @@ export function Navbar() {
                       >
                         <Repeat className="h-4 w-4 mb-1" />
                         <span>Loop</span>
+                      </button>
+                    </div>
+
+                    {/* Audio Translation Toggle */}
+                    <div className="space-y-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                      <span className="flex items-center gap-1 text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                        Translation Voice
+                      </span>
+                      
+                      {/* Play English Audio Toggle */}
+                      <button
+                        onClick={() => setPlayEnglishAudio(!playEnglishAudio)}
+                        className="flex w-full items-center justify-between rounded-lg p-2 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 text-left text-sm font-medium transition-colors"
+                      >
+                        <span className="text-zinc-700 dark:text-zinc-300">Play English (Human Voice)</span>
+                        <div className={`flex h-5 w-5 items-center justify-center rounded-md border transition-all ${
+                          playEnglishAudio
+                            ? "bg-emerald-500 border-emerald-500 text-white"
+                            : "border-zinc-300 dark:border-zinc-700"
+                        }`}>
+                          {playEnglishAudio && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                        </div>
                       </button>
                     </div>
                   </div>

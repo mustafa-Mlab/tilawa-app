@@ -2,7 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
-import { getAyahAudioUrl, getSurah } from "@/lib/quran";
+import { getAyahAudioUrl, getSurah, AyahDetail } from "@/lib/quran";
 import { useRouter } from "next/navigation";
 
 export interface Reciter {
@@ -26,6 +26,7 @@ export const RECITERS: Reciter[] = [
   { id: "ar.abdulsamad", name: "عبد الباسط عبد الصمد", englishName: "Abdul Samad" },
   { id: "ar.abdullahbasfar", name: "عبد الله بصفر", englishName: "Abdullah Basfar" },
   { id: "ar.hanirifai", name: "هاني الرفاعي", englishName: "Hani Ar-Rifai" },
+  { id: "en.walk", name: "Ibrahim Walk (English Translation)", englishName: "Ibrahim Walk (English Translation)" },
 ];
 
 export interface LastRead {
@@ -49,6 +50,7 @@ interface QuranContextProps {
   currentTime: number; // Seconds
   autoplayNext: boolean;
   loop: boolean;
+  playEnglishAudio: boolean;
 
   // Visual settings
   arabicFontSize: number; // in px
@@ -66,7 +68,7 @@ interface QuranContextProps {
     ayahNumberInSurah: number,
     surahId: number,
     surahName: string,
-    surahAyahs: { number: number; numberInSurah: number }[]
+    surahAyahs: AyahDetail[]
   ) => void;
   pauseAudio: () => void;
   resumeAudio: () => void;
@@ -76,6 +78,7 @@ interface QuranContextProps {
   setVolume: (val: number) => void;
   setAutoplayNext: (val: boolean) => void;
   setLoop: (val: boolean) => void;
+  setPlayEnglishAudio: (val: boolean) => void;
   toggleBookmark: (ayahNumber: number) => void;
   updateLastRead: (surahId: number, surahName: string, ayahNumberInSurah: number) => void;
   setArabicFontSize: (size: number) => void;
@@ -106,9 +109,10 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [autoplayNext, setAutoplayNextState] = useState(true);
   const [loop, setLoopState] = useState(false);
+  const [playEnglishAudio, setPlayEnglishAudioState] = useState(true);
 
   // The active Surah's Ayahs list for navigation/autoplay
-  const [activeSurahAyahs, setActiveSurahAyahs] = useState<{ number: number; numberInSurah: number }[]>([]);
+  const [activeSurahAyahs, setActiveSurahAyahs] = useState<AyahDetail[]>([]);
 
   // Visual state
   const [arabicFontSize, setArabicFontSizeState] = useState(36); // px
@@ -124,6 +128,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isBismillahPlayingRef = useRef(false);
   const isIntroSpeakingRef = useRef(false);
+  const isTranslationPlayingRef = useRef(false);
 
   // Initialize state from local storage (client-side only)
   useEffect(() => {
@@ -134,6 +139,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         const storedVolume = localStorage.getItem("tilawa_volume");
         const storedAutoplay = localStorage.getItem("tilawa_autoplay");
         const storedLoop = localStorage.getItem("tilawa_loop");
+        const storedPlayEnglishAudio = localStorage.getItem("tilawa_play_english_audio");
         const storedArSize = localStorage.getItem("tilawa_ar_size");
         const storedEnSize = localStorage.getItem("tilawa_en_size");
         const storedShowEn = localStorage.getItem("tilawa_show_en");
@@ -146,6 +152,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         if (storedVolume) setVolumeState(parseFloat(storedVolume));
         if (storedAutoplay) setAutoplayNextState(storedAutoplay === "true");
         if (storedLoop) setLoopState(storedLoop === "true");
+        if (storedPlayEnglishAudio) setPlayEnglishAudioState(storedPlayEnglishAudio === "true");
         if (storedArSize) setArabicFontSizeState(parseInt(storedArSize));
         if (storedEnSize) setTranslationFontSizeState(parseInt(storedEnSize));
         if (storedShowEn) setShowEnglishState(storedShowEn === "true");
@@ -209,6 +216,13 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     saveSetting("tilawa_loop", val.toString());
   };
 
+  const setPlayEnglishAudio = (val: boolean) => {
+    setPlayEnglishAudioState(val);
+    saveSetting("tilawa_play_english_audio", val.toString());
+  };
+
+
+
   const setArabicFontSize = (size: number) => {
     setArabicFontSizeState(size);
     saveSetting("tilawa_ar_size", size.toString());
@@ -246,6 +260,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   // Main playback controls
   const playActualFirstAyah = useCallback((ayahNum: number) => {
     if (!audioRef.current) return;
+    isTranslationPlayingRef.current = false;
     audioRef.current.src = getAyahAudioUrl(ayahNum, reciter);
     audioRef.current.playbackRate = playbackRate;
     audioRef.current.volume = volume;
@@ -264,7 +279,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     ayahNumberInSurah: number,
     surahId: number,
     surahName: string,
-    surahAyahs: { number: number; numberInSurah: number }[]
+    surahAyahs: AyahDetail[]
   ) => {
     if (!audioRef.current) return;
 
@@ -293,6 +308,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     window.speechSynthesis.cancel();
     isIntroSpeakingRef.current = false;
     isBismillahPlayingRef.current = false;
+    isTranslationPlayingRef.current = false;
 
     // New Ayah
     setCurrentSurahId(surahId);
@@ -375,6 +391,66 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+
+
+  function triggerAutoplayOrLoop() {
+    // Case 3: Autoplay is DISABLED and Loop is ENABLED -> replay same Ayah
+    if (!autoplayNext && loop) {
+      if (currentAyahNumber) {
+        playActualFirstAyah(currentAyahNumber);
+      }
+      return;
+    }
+
+    // Case 4: Autoplay is DISABLED and Loop is DISABLED -> stop playing
+    if (!autoplayNext && !loop) {
+      setIsPlaying(false);
+      return;
+    }
+
+    // If Autoplay is ENABLED:
+    if (autoplayNext) {
+      if (activeSurahAyahs.length === 0 || currentAyahNumber === null || currentSurahId === null || currentSurahName === null) {
+        setIsPlaying(false);
+        return;
+      }
+
+      const currentIndex = activeSurahAyahs.findIndex(a => a.number === currentAyahNumber);
+
+      // If NOT the last Ayah of the current Surah: play next Ayah
+      if (currentIndex !== -1 && currentIndex < activeSurahAyahs.length - 1) {
+        const next = activeSurahAyahs[currentIndex + 1];
+        playAyah(next.number, next.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
+      } else {
+        // We reached the END of the current Surah!
+        
+        // Case 2: Autoplay is ENABLED and Loop is ENABLED -> play current Surah in loop (loop back to first Ayah of current Surah)
+        if (loop) {
+          const first = activeSurahAyahs[0];
+          playAyah(first.number, first.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
+        } else {
+          // Case 1: Autoplay is ENABLED and Loop is DISABLED -> play next Surah automatically
+          const nextSurahId = currentSurahId + 1;
+          if (nextSurahId <= 114) {
+            getSurah(nextSurahId)
+              .then((nextSurah) => {
+                const firstAyah = nextSurah.ayahs[0];
+                playAyah(firstAyah.number, 1, nextSurahId, nextSurah.englishName, nextSurah.ayahs);
+                router.push(`/surah/${nextSurahId}`);
+              })
+              .catch((err) => {
+                console.error("Failed to autoplay next surah", err);
+                setIsPlaying(false);
+              });
+          } else {
+            // End of Quran, stop
+            stopAudio();
+          }
+        }
+      }
+    }
+  }
+
   const pauseAudio = () => {
     if (isIntroSpeakingRef.current) {
       window.speechSynthesis.pause();
@@ -397,6 +473,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     window.speechSynthesis.cancel();
     isIntroSpeakingRef.current = false;
     isBismillahPlayingRef.current = false;
+    isTranslationPlayingRef.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -475,66 +552,26 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Case 3: Autoplay is DISABLED and Loop is ENABLED -> replay same Ayah
-    if (!autoplayNext && loop) {
+    // If Arabic recitation ends and playEnglishAudio is enabled, play Ibrahim Walk translation audio
+    if (!isTranslationPlayingRef.current && playEnglishAudio && reciter !== "en.walk" && currentAyahNumber) {
+      isTranslationPlayingRef.current = true;
       if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(err => console.error("Replay ayah failed", err));
+        audioRef.current.src = getAyahAudioUrl(currentAyahNumber, "en.walk");
+        audioRef.current.playbackRate = playbackRate;
+        audioRef.current.volume = volume;
+        audioRef.current.load();
+        audioRef.current.play()
+          .catch(err => {
+            console.error("Failed to play Ibrahim Walk translation audio", err);
+            isTranslationPlayingRef.current = false;
+            triggerAutoplayOrLoop();
+          });
       }
       return;
     }
 
-    // Case 4: Autoplay is DISABLED and Loop is DISABLED -> stop playing
-    if (!autoplayNext && !loop) {
-      setIsPlaying(false);
-      return;
-    }
-
-    // If Autoplay is ENABLED:
-    if (autoplayNext) {
-      if (activeSurahAyahs.length === 0 || currentAyahNumber === null || currentSurahId === null || currentSurahName === null) {
-        setIsPlaying(false);
-        return;
-      }
-
-      const currentIndex = activeSurahAyahs.findIndex(a => a.number === currentAyahNumber);
-
-      // If NOT the last Ayah of the current Surah: play next Ayah
-      if (currentIndex !== -1 && currentIndex < activeSurahAyahs.length - 1) {
-        const next = activeSurahAyahs[currentIndex + 1];
-        playAyah(next.number, next.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
-      } else {
-        // We reached the END of the current Surah!
-        
-        // Case 2: Autoplay is ENABLED and Loop is ENABLED -> play current Surah in loop (loop back to first Ayah of current Surah)
-        if (loop) {
-          const first = activeSurahAyahs[0];
-          playAyah(first.number, first.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
-        } else {
-          // Case 1: Autoplay is ENABLED and Loop is DISABLED -> play next Surah automatically
-          const nextSurahId = currentSurahId + 1;
-          if (nextSurahId <= 114) {
-            getSurah(nextSurahId)
-              .then((nextSurah) => {
-                const firstAyah = nextSurah.ayahs[0];
-                const nextSurahAyahs = nextSurah.ayahs.map(a => ({
-                  number: a.number,
-                  numberInSurah: a.numberInSurah
-                }));
-                playAyah(firstAyah.number, 1, nextSurahId, nextSurah.englishName, nextSurahAyahs);
-                router.push(`/surah/${nextSurahId}`);
-              })
-              .catch((err) => {
-                console.error("Failed to autoplay next surah", err);
-                setIsPlaying(false);
-              });
-          } else {
-            // End of Quran, stop
-            stopAudio();
-          }
-        }
-      }
-    }
+    isTranslationPlayingRef.current = false;
+    triggerAutoplayOrLoop();
   };
 
   const handleError = (e: React.SyntheticEvent<HTMLAudioElement, Event>) => {
@@ -558,6 +595,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         currentTime,
         autoplayNext,
         loop,
+        playEnglishAudio,
         arabicFontSize,
         translationFontSize,
         showEnglish,
@@ -573,6 +611,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         setVolume,
         setAutoplayNext,
         setLoop,
+        setPlayEnglishAudio,
         toggleBookmark,
         updateLastRead,
         setArabicFontSize,

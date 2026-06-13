@@ -113,6 +113,7 @@ const RECITER_BITRATES: Record<string, number> = {
   "ar.abdulsamad": 64,
   "ar.abdullahbasfar": 64,
   "ar.hanirifai": 64,
+  "en.walk": 192,
 };
 
 export function getAyahAudioUrl(ayahNumber: number, reciter = "ar.alafasy") {

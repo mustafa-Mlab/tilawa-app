@@ -9,7 +9,7 @@ interface AyahCardProps {
   ayah: AyahDetail;
   surahId: number;
   surahName: string;
-  surahAyahs: { number: number; numberInSurah: number }[]
+  surahAyahs: AyahDetail[]
 }
 
 export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps) {

@@ -67,10 +67,7 @@ export default async function SurahPage({ params }: PageProps) {
   const isMeccan = surah.revelationType === "Meccan";
 
   // Array of ayah structures to pass to child cards for audio player list management
-  const surahAyahs = surah.ayahs.map((a) => ({
-    number: a.number,
-    numberInSurah: a.numberInSurah,
-  }));
+  const surahAyahs = surah.ayahs;
 
   // Render centered Bismillah for Surahs (except Al-Fatiha (1) and At-Tawbah (9))
   const showBismillah = surahId !== 1 && surahId !== 9;
