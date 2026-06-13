@@ -2,7 +2,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
-import { getAyahAudioUrl } from "@/lib/quran";
+import { getAyahAudioUrl, getSurah } from "@/lib/quran";
+import { useRouter } from "next/navigation";
 
 export interface Reciter {
   id: string;
@@ -47,6 +48,7 @@ interface QuranContextProps {
   duration: number; // Seconds
   currentTime: number; // Seconds
   autoplayNext: boolean;
+  loop: boolean;
 
   // Visual settings
   arabicFontSize: number; // in px
@@ -73,6 +75,7 @@ interface QuranContextProps {
   setPlaybackRate: (rate: number) => void;
   setVolume: (val: number) => void;
   setAutoplayNext: (val: boolean) => void;
+  setLoop: (val: boolean) => void;
   toggleBookmark: (ayahNumber: number) => void;
   updateLastRead: (surahId: number, surahName: string, ayahNumberInSurah: number) => void;
   setArabicFontSize: (size: number) => void;
@@ -87,6 +90,7 @@ interface QuranContextProps {
 const QuranContext = createContext<QuranContextProps | undefined>(undefined);
 
 export function QuranProvider({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
 
   // Audio state
   const [currentSurahId, setCurrentSurahId] = useState<number | null>(null);
@@ -101,6 +105,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [autoplayNext, setAutoplayNextState] = useState(true);
+  const [loop, setLoopState] = useState(false);
 
   // The active Surah's Ayahs list for navigation/autoplay
   const [activeSurahAyahs, setActiveSurahAyahs] = useState<{ number: number; numberInSurah: number }[]>([]);
@@ -117,6 +122,8 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
 
   // HTML Audio instance ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const isBismillahPlayingRef = useRef(false);
+  const isIntroSpeakingRef = useRef(false);
 
   // Initialize state from local storage (client-side only)
   useEffect(() => {
@@ -126,6 +133,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         const storedRate = localStorage.getItem("tilawa_rate");
         const storedVolume = localStorage.getItem("tilawa_volume");
         const storedAutoplay = localStorage.getItem("tilawa_autoplay");
+        const storedLoop = localStorage.getItem("tilawa_loop");
         const storedArSize = localStorage.getItem("tilawa_ar_size");
         const storedEnSize = localStorage.getItem("tilawa_en_size");
         const storedShowEn = localStorage.getItem("tilawa_show_en");
@@ -137,6 +145,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         if (storedRate) setPlaybackRateState(parseFloat(storedRate));
         if (storedVolume) setVolumeState(parseFloat(storedVolume));
         if (storedAutoplay) setAutoplayNextState(storedAutoplay === "true");
+        if (storedLoop) setLoopState(storedLoop === "true");
         if (storedArSize) setArabicFontSizeState(parseInt(storedArSize));
         if (storedEnSize) setTranslationFontSizeState(parseInt(storedEnSize));
         if (storedShowEn) setShowEnglishState(storedShowEn === "true");
@@ -195,6 +204,11 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     saveSetting("tilawa_autoplay", val.toString());
   };
 
+  const setLoop = (val: boolean) => {
+    setLoopState(val);
+    saveSetting("tilawa_loop", val.toString());
+  };
+
   const setArabicFontSize = (size: number) => {
     setArabicFontSizeState(size);
     saveSetting("tilawa_ar_size", size.toString());
@@ -230,6 +244,21 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Main playback controls
+  const playActualFirstAyah = useCallback((ayahNum: number) => {
+    if (!audioRef.current) return;
+    audioRef.current.src = getAyahAudioUrl(ayahNum, reciter);
+    audioRef.current.playbackRate = playbackRate;
+    audioRef.current.volume = volume;
+    audioRef.current.load();
+    
+    audioRef.current.play()
+      .then(() => setIsPlaying(true))
+      .catch(err => {
+        console.error("Play failed", err);
+        setIsPlaying(false);
+      });
+  }, [reciter, playbackRate, volume]);
+
   const playAyah = (
     ayahNumber: number,
     ayahNumberInSurah: number,
@@ -244,13 +273,26 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
 
     // If it's already the same ayah, toggle play/pause
     if (currentAyahNumber === ayahNumber) {
-      if (!audioRef.current.paused && !audioRef.current.ended) {
+      if (isIntroSpeakingRef.current) {
+        if (isPlaying) {
+          window.speechSynthesis.pause();
+          setIsPlaying(false);
+        } else {
+          window.speechSynthesis.resume();
+          setIsPlaying(true);
+        }
+      } else if (!audioRef.current.paused && !audioRef.current.ended) {
         audioRef.current.pause();
       } else {
         audioRef.current.play().catch(err => console.error("Resume playback failed", err));
       }
       return;
     }
+
+    // Cancel any active speech synthesis and reset playback state
+    window.speechSynthesis.cancel();
+    isIntroSpeakingRef.current = false;
+    isBismillahPlayingRef.current = false;
 
     // New Ayah
     setCurrentSurahId(surahId);
@@ -259,32 +301,102 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     setCurrentAyahNumberInSurah(ayahNumberInSurah);
     updateLastRead(surahId, surahName, ayahNumberInSurah);
 
-    audioRef.current.src = getAyahAudioUrl(ayahNumber, reciter);
-    audioRef.current.playbackRate = playbackRate;
-    audioRef.current.volume = volume;
-    audioRef.current.load();
-    
-    audioRef.current.play()
-      .then(() => setIsPlaying(true))
-      .catch(err => {
-        console.error("Play failed", err);
-        setIsPlaying(false);
-      });
+    // If starting a Surah from the beginning (Ayah 1):
+    if (ayahNumberInSurah === 1) {
+      setIsPlaying(true);
+      isIntroSpeakingRef.current = true;
+
+      getSurah(surahId)
+        .then((surahDetails) => {
+          const type = surahDetails.revelationType; // "Meccan" or "Medinan"
+          const speechText = `Surah ${surahName}. It is a ${type} Surah.`;
+          
+          const utterance = new SpeechSynthesisUtterance(speechText);
+          
+          // Select a high-quality male voice (Alex/Daniel on macOS, Google UK Male, or Microsoft David on Windows)
+          const voices = window.speechSynthesis.getVoices();
+          const maleVoice = 
+            voices.find(v => v.name.toLowerCase().includes("google uk english male")) ||
+            voices.find(v => v.name.toLowerCase() === "alex") ||
+            voices.find(v => v.name.toLowerCase().includes("daniel")) ||
+            voices.find(v => v.name.toLowerCase().includes("oliver")) ||
+            voices.find(v => v.name.toLowerCase().includes("david")) ||
+            voices.find(v => v.name.toLowerCase().includes("male") && v.lang.startsWith("en")) ||
+            voices.find(v => v.lang.startsWith("en"));
+
+          if (maleVoice) {
+            utterance.voice = maleVoice;
+            utterance.lang = maleVoice.lang;
+          } else {
+            utterance.lang = "en-US";
+          }
+
+          utterance.rate = 0.85; // Slightly slower, more solemn and natural
+          utterance.pitch = 0.95; // Slightly deeper pitch
+          
+          utterance.onend = () => {
+            isIntroSpeakingRef.current = false;
+            
+            // After speech finishes, play Bismillah (global Ayah 1) for all Surahs except Al-Fatiha (1) and At-Tawbah (9)
+            const needsBismillah = surahId !== 1 && surahId !== 9;
+            if (needsBismillah) {
+              isBismillahPlayingRef.current = true;
+              if (audioRef.current) {
+                audioRef.current.src = getAyahAudioUrl(1, reciter);
+                audioRef.current.load();
+                audioRef.current.play()
+                  .catch(err => {
+                    console.error("Failed to play Bismillah audio, playing Ayah 1 directly", err);
+                    isBismillahPlayingRef.current = false;
+                    playActualFirstAyah(ayahNumber);
+                  });
+              }
+            } else {
+              playActualFirstAyah(ayahNumber);
+            }
+          };
+
+          utterance.onerror = (e) => {
+            console.error("Speech synthesis error", e);
+            isIntroSpeakingRef.current = false;
+            playActualFirstAyah(ayahNumber);
+          };
+
+          window.speechSynthesis.speak(utterance);
+        })
+        .catch((err) => {
+          console.error("Failed to get Surah details for intro announcement", err);
+          isIntroSpeakingRef.current = false;
+          playActualFirstAyah(ayahNumber);
+        });
+    } else {
+      // Normal Ayah playback
+      playActualFirstAyah(ayahNumber);
+    }
   };
 
   const pauseAudio = () => {
-    if (audioRef.current) {
+    if (isIntroSpeakingRef.current) {
+      window.speechSynthesis.pause();
+      setIsPlaying(false);
+    } else if (audioRef.current) {
       audioRef.current.pause();
     }
   };
 
   const resumeAudio = () => {
-    if (audioRef.current && currentAyahNumber) {
+    if (isIntroSpeakingRef.current) {
+      window.speechSynthesis.resume();
+      setIsPlaying(true);
+    } else if (audioRef.current && currentAyahNumber) {
       audioRef.current.play().catch(err => console.error("Play failed", err));
     }
   };
 
   const stopAudio = () => {
+    window.speechSynthesis.cancel();
+    isIntroSpeakingRef.current = false;
+    isBismillahPlayingRef.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -352,12 +464,76 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleEnded = () => {
-    setIsPlaying(false);
     setProgress(100);
-    
-    // Auto-trigger next ayah if autoplay is enabled
+
+    // If Bismillah finished playing, transition to actual first Ayah
+    if (isBismillahPlayingRef.current) {
+      isBismillahPlayingRef.current = false;
+      if (currentAyahNumber) {
+        playActualFirstAyah(currentAyahNumber);
+      }
+      return;
+    }
+
+    // Case 3: Autoplay is DISABLED and Loop is ENABLED -> replay same Ayah
+    if (!autoplayNext && loop) {
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(err => console.error("Replay ayah failed", err));
+      }
+      return;
+    }
+
+    // Case 4: Autoplay is DISABLED and Loop is DISABLED -> stop playing
+    if (!autoplayNext && !loop) {
+      setIsPlaying(false);
+      return;
+    }
+
+    // If Autoplay is ENABLED:
     if (autoplayNext) {
-      handleNextAyah();
+      if (activeSurahAyahs.length === 0 || currentAyahNumber === null || currentSurahId === null || currentSurahName === null) {
+        setIsPlaying(false);
+        return;
+      }
+
+      const currentIndex = activeSurahAyahs.findIndex(a => a.number === currentAyahNumber);
+
+      // If NOT the last Ayah of the current Surah: play next Ayah
+      if (currentIndex !== -1 && currentIndex < activeSurahAyahs.length - 1) {
+        const next = activeSurahAyahs[currentIndex + 1];
+        playAyah(next.number, next.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
+      } else {
+        // We reached the END of the current Surah!
+        
+        // Case 2: Autoplay is ENABLED and Loop is ENABLED -> play current Surah in loop (loop back to first Ayah of current Surah)
+        if (loop) {
+          const first = activeSurahAyahs[0];
+          playAyah(first.number, first.numberInSurah, currentSurahId, currentSurahName, activeSurahAyahs);
+        } else {
+          // Case 1: Autoplay is ENABLED and Loop is DISABLED -> play next Surah automatically
+          const nextSurahId = currentSurahId + 1;
+          if (nextSurahId <= 114) {
+            getSurah(nextSurahId)
+              .then((nextSurah) => {
+                const firstAyah = nextSurah.ayahs[0];
+                const nextSurahAyahs = nextSurah.ayahs.map(a => ({
+                  number: a.number,
+                  numberInSurah: a.numberInSurah
+                }));
+                playAyah(firstAyah.number, 1, nextSurahId, nextSurah.englishName, nextSurahAyahs);
+                router.push(`/surah/${nextSurahId}`);
+              })
+              .catch((err) => {
+                console.error("Failed to autoplay next surah", err);
+                setIsPlaying(false);
+              });
+          } else {
+            // End of Quran, stop
+            stopAudio();
+          }
+        }
+      }
     }
   };
 
@@ -381,6 +557,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         duration,
         currentTime,
         autoplayNext,
+        loop,
         arabicFontSize,
         translationFontSize,
         showEnglish,
@@ -395,6 +572,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         setPlaybackRate,
         setVolume,
         setAutoplayNext,
+        setLoop,
         toggleBookmark,
         updateLastRead,
         setArabicFontSize,

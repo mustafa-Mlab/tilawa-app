@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages } from "lucide-react";
-import { useQuran } from "@/context/QuranContext";
+import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages, Music, Play, Repeat } from "lucide-react";
+import { useQuran, RECITERS } from "@/context/QuranContext";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
@@ -17,6 +17,12 @@ export function Navbar() {
     showBangla,
     setShowBangla,
     bookmarks,
+    reciter,
+    setReciter,
+    autoplayNext,
+    setAutoplayNext,
+    loop,
+    setLoop,
   } = useQuran();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -156,6 +162,70 @@ export function Navbar() {
                         {showBangla && <Check className="h-3.5 w-3.5 stroke-[3]" />}
                       </div>
                     </button>
+                  </div>
+
+                  {/* Tilawat Settings Section */}
+                  <div className="flex items-center gap-2 border-b border-zinc-100 pb-3 dark:border-zinc-800 mb-4 mt-6">
+                    <Music className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                    <h3 className="font-semibold text-zinc-900 dark:text-white text-sm">
+                      Tilawat Settings
+                    </h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {/* Reciter dropdown list */}
+                    <div className="space-y-1.5">
+                      <span className="flex items-center gap-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+                        Reciter
+                      </span>
+                      <div className="relative">
+                        <select
+                          value={reciter}
+                          onChange={(e) => setReciter(e.target.value)}
+                          className="w-full pl-3 pr-8 py-2 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white/50 dark:bg-zinc-900/50 text-xs font-semibold text-zinc-700 dark:text-zinc-300 focus:outline-hidden focus:ring-1 focus:ring-emerald-500/30 cursor-pointer appearance-none"
+                        >
+                          {RECITERS.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.englishName}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-400 text-[8px] font-bold">
+                          ▼
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Playback Toggles */}
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                      {/* Autoplay Toggle */}
+                      <button
+                        onClick={() => setAutoplayNext(!autoplayNext)}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          autoplayNext
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
+                            : "border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                        }`}
+                        title="Autoplay next verse"
+                      >
+                        <Play className="h-4 w-4 mb-1" />
+                        <span>Autoplay</span>
+                      </button>
+
+                      {/* Loop Toggle */}
+                      <button
+                        onClick={() => setLoop(!loop)}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs font-bold transition-all ${
+                          loop
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
+                            : "border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800/50"
+                        }`}
+                        title="Loop playback"
+                      >
+                        <Repeat className="h-4 w-4 mb-1" />
+                        <span>Loop</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

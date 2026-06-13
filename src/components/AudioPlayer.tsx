@@ -12,6 +12,7 @@ import {
   Gauge,
   User,
   RefreshCw,
+  Repeat,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -31,6 +32,8 @@ export function AudioPlayer() {
     currentTime,
     autoplayNext,
     setAutoplayNext,
+    loop,
+    setLoop,
     pauseAudio,
     resumeAudio,
     stopAudio,
@@ -81,7 +84,7 @@ export function AudioPlayer() {
   };
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-5xl mx-auto border border-zinc-200/50 bg-white/85 shadow-2xl dark:border-zinc-800/60 dark:bg-zinc-950/85 backdrop-blur-xl rounded-2xl flex flex-col transition-all duration-300 transform translate-y-0 animate-fade-in-up">
+    <div className="fixed bottom-6 left-4 right-4 z-50 max-w-7xl mx-auto border border-zinc-200/50 bg-white/85 shadow-2xl dark:border-zinc-800/60 dark:bg-zinc-950/85 backdrop-blur-xl rounded-2xl flex flex-col transition-all duration-300 transform translate-y-0 animate-fade-in-up">
       {/* Progress Bar (Clickable) */}
       <div
         className="w-full h-1.5 bg-zinc-150 dark:bg-zinc-800 rounded-t-2xl overflow-hidden cursor-pointer relative group"
@@ -168,9 +171,9 @@ export function AudioPlayer() {
         </div>
 
         {/* Right Side: Options & Audio settings */}
-        <div className="flex items-center justify-between md:justify-end gap-5 w-full md:w-auto border-t md:border-t-0 border-zinc-100 pt-3 md:pt-0 dark:border-zinc-800/40">
+        <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 w-full md:w-auto border-t md:border-t-0 border-zinc-100 pt-3 md:pt-0 dark:border-zinc-800/40">
           {/* Reciter dropdown list */}
-          <div className="relative">
+          <div className="relative hidden xl:block">
             <select
               value={reciter}
               onChange={(e) => setReciter(e.target.value)}
@@ -190,7 +193,7 @@ export function AudioPlayer() {
           {/* Autoplay Next Toggle */}
           <button
             onClick={() => setAutoplayNext(!autoplayNext)}
-            className={`flex h-9.5 px-3 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
+            className={`flex h-9.5 px-2.5 xl:px-3 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
               autoplayNext
                 ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
                 : "border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"
@@ -198,7 +201,21 @@ export function AudioPlayer() {
             title="Autoplay next verse"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${autoplayNext && isPlaying ? "animate-spin-slow" : ""}`} />
-            <span className="hidden sm:inline">Autoplay</span>
+            <span className="hidden xl:inline">Autoplay</span>
+          </button>
+
+          {/* Loop Toggle */}
+          <button
+            onClick={() => setLoop(!loop)}
+            className={`flex h-9.5 px-2.5 xl:px-3 items-center gap-1.5 rounded-lg border text-xs font-bold transition-all ${
+              loop
+                ? "bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-950/20 dark:border-emerald-800 dark:text-emerald-400"
+                : "border-zinc-200 text-zinc-500 dark:border-zinc-800 dark:text-zinc-400"
+            }`}
+            title="Loop playback"
+          >
+            <Repeat className="h-3.5 w-3.5" />
+            <span className="hidden xl:inline">Loop</span>
           </button>
 
           {/* Speed settings selector */}
