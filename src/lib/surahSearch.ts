@@ -3,11 +3,7 @@
  *
  * Handles the reality that Arabic Surah names have many valid transliterations
  * e.g. "al fukan" / "al furqaan" / "al-furqan" should all find Surah 25.
- *
- * Strategy:
- *  1. Normalize both query & target (strip diacritics, lower-case, collapse spaces/hyphens)
- *  2. Apply phonetic token mapping (q↔k, f↔ph, aa↔a, oo↔u, etc.)
- *  3. Score using: exact > starts-with > phonetic-includes > fuzzy (Levenshtein-like)
+ * Also supports verse level search e.g. "25:2", "al fukan 2", "furqan:2".
  */
 
 // ---------------------------------------------------------------------------
@@ -52,7 +48,7 @@ const SURAH_ALIASES: Record<string, string> = {
   muminun: "almuminun", mominun: "almuminun", mumenoon: "almuminun",
   // An-Nur
   noor: "alnur", light: "alnur",
-  // Al-Furqan <- the key one from the user's example
+  // Al-Furqan <- key transliterations
   furqan: "alfurqan", fukan: "alfurqan", furkan: "alfurqan", forkan: "alfurqan",
   furqaan: "alfurqan", furkaan: "alfurqan", forkaan: "alfurqan", furkon: "alfurqan",
   // Ash-Shu'ara
@@ -157,10 +153,6 @@ const PHONETIC_REPLACEMENTS: [RegExp, string][] = [
   [/[aeiou]/g, "a"],
 ];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function normalize(str: string): string {
   return str
     .toLowerCase()
@@ -197,6 +189,51 @@ function levenshtein(a: string, b: string): number {
 }
 
 // ---------------------------------------------------------------------------
+// Query parser for Surah + Ayah (e.g. "25:2", "al fukan 2", "furqan:2")
+// ---------------------------------------------------------------------------
+export interface ParsedSearchQuery {
+  surahQuery: string;
+  ayahNumber?: number;
+}
+
+export function parseSurahAyahQuery(rawQuery: string): ParsedSearchQuery {
+  let q = rawQuery.trim();
+  if (!q) return { surahQuery: "" };
+
+  // Strip leading "surah" or "sura" if present
+  q = q.replace(/^(?:surah|sura)\s+/i, "");
+
+  // 1. Colon or comma separator: "25:2", "al furkan: 2", "25,2"
+  const colonMatch = q.match(/^(.*?)(?::|,)\s*(\d+)$/i);
+  if (colonMatch && colonMatch[1].trim()) {
+    return {
+      surahQuery: colonMatch[1].trim(),
+      ayahNumber: parseInt(colonMatch[2], 10),
+    };
+  }
+
+  // 2. Explicit verse words: "25 ayah 2", "furqan verse 2", "al fukan v2"
+  const verseWordMatch = q.match(/^(.*?)\s+(?:ayah|verse|aaya|ayat|v)\s*(\d+)$/i);
+  if (verseWordMatch && verseWordMatch[1].trim()) {
+    return {
+      surahQuery: verseWordMatch[1].trim(),
+      ayahNumber: parseInt(verseWordMatch[2], 10),
+    };
+  }
+
+  // 3. Trailing space separated number: "25 2", "al furkan 2", "furqan 2"
+  const trailingNumMatch = q.match(/^(.*?)\s+(\d+)$/i);
+  if (trailingNumMatch && trailingNumMatch[1].trim()) {
+    return {
+      surahQuery: trailingNumMatch[1].trim(),
+      ayahNumber: parseInt(trailingNumMatch[2], 10),
+    };
+  }
+
+  return { surahQuery: q };
+}
+
+// ---------------------------------------------------------------------------
 // Main exports
 // ---------------------------------------------------------------------------
 
@@ -205,6 +242,7 @@ export interface SurahSearchable {
   englishName: string;
   englishNameTranslation: string;
   name: string; // Arabic
+  numberOfAyahs?: number;
   revelationType?: string;
 }
 
@@ -277,18 +315,26 @@ export function scoreSurah(surah: SurahSearchable, rawQuery: string): number {
   return 0;
 }
 
+export interface DirectAyahMatch<T> {
+  surah: T;
+  ayahNumber: number;
+}
+
 export function fuzzySearchSurahs<T extends SurahSearchable>(
   surahs: T[],
-  query: string,
+  rawQuery: string,
   revelationFilter: "All" | "Meccan" | "Medinan" = "All"
-): T[] {
+): { surahs: T[]; directAyahMatch?: DirectAyahMatch<T> } {
+  const { surahQuery, ayahNumber } = parseSurahAyahQuery(rawQuery);
+  const effectiveQuery = surahQuery || rawQuery;
+
   const results: { surah: T; score: number }[] = [];
 
   for (const surah of surahs) {
     if (revelationFilter !== "All" && surah.revelationType !== revelationFilter) {
       continue;
     }
-    const score = scoreSurah(surah, query);
+    const score = scoreSurah(surah, effectiveQuery);
     if (score > 0) {
       results.push({ surah, score });
     }
@@ -298,5 +344,19 @@ export function fuzzySearchSurahs<T extends SurahSearchable>(
     b.score !== a.score ? b.score - a.score : a.surah.number - b.surah.number
   );
 
-  return results.map((r) => r.surah);
+  const matchedSurahs = results.map((r) => r.surah);
+
+  let directAyahMatch: DirectAyahMatch<T> | undefined;
+  if (ayahNumber && matchedSurahs.length > 0) {
+    const topSurah = matchedSurahs[0];
+    const maxAyahs = topSurah.numberOfAyahs || 286;
+    if (ayahNumber > 0 && ayahNumber <= maxAyahs) {
+      directAyahMatch = {
+        surah: topSurah,
+        ayahNumber,
+      };
+    }
+  }
+
+  return { surahs: matchedSurahs, directAyahMatch };
 }

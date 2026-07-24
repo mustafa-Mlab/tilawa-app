@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Home, Compass, BookOpen } from "lucide-react
 import Link from "next/link";
 import { Metadata } from "next";
 import { InitializeLastRead } from "./InitializeLastRead";
+import { ScrollToAyah } from "./ScrollToAyah";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -74,8 +75,9 @@ export default async function SurahPage({ params }: PageProps) {
 
   return (
     <div className="space-y-8 animate-fade-in-up">
-      {/* Setup client-side last-read trigger */}
+      {/* Setup client-side last-read trigger & auto-scroll for verse links */}
       <InitializeLastRead surahId={surah.number} surahName={surah.englishName} />
+      <ScrollToAyah />
 
       {/* Breadcrumbs / Navigation Header */}
       <div className="flex items-center justify-between border-b border-zinc-200/50 pb-4 dark:border-zinc-800/50">

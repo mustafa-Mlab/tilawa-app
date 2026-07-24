@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { SurahInfo } from "@/lib/quran";
 import { fuzzySearchSurahs } from "@/lib/surahSearch";
 import { SurahCard } from "./SurahCard";
-import { Search, BookOpen, Clock, ChevronRight, Sparkles, History, X } from "lucide-react";
+import { Search, BookOpen, Clock, ChevronRight, Sparkles, History, X, ArrowRight } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
 import Link from "next/link";
 
@@ -85,8 +85,8 @@ export function SurahList({ surahs }: SurahListProps) {
     setShowHistory(false);
   };
 
-  // Fuzzy / phonetic search — handles transliteration variants like "al fukan" → Al-Furqan
-  const filteredSurahs = fuzzySearchSurahs(surahs, searchQuery, filterType);
+  // Fuzzy / phonetic & Ayah search (e.g. "25:2", "al fukan 2", "furqan:2")
+  const { surahs: filteredSurahs, directAyahMatch } = fuzzySearchSurahs(surahs, searchQuery, filterType);
 
   const hasHistory = searchHistory.length > 0;
 
@@ -113,7 +113,7 @@ export function SurahList({ surahs }: SurahListProps) {
               </div>
             </div>
             <Link
-              href={`/surah/${lastRead.surahId}`}
+              href={`/surah/${lastRead.surahId}#ayah-${lastRead.ayahNumberInSurah}`}
               className="inline-flex items-center justify-center gap-1 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm shadow-xs hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
             >
               Resume Reading
@@ -134,7 +134,7 @@ export function SurahList({ surahs }: SurahListProps) {
             <input
               id="surah-search-input"
               type="text"
-              placeholder="Search Surah by name, translation, or number..."
+              placeholder="Search Surah by name, number, or verse (e.g. 25:2)..."
               value={searchQuery}
               autoComplete="off"
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -151,7 +151,6 @@ export function SurahList({ surahs }: SurahListProps) {
                 }
               }}
               onBlur={() => {
-                // Small delay so clicks on history items register first
                 setTimeout(() => commitToHistory(searchQuery), 150);
               }}
               className="w-full pl-11 pr-10 py-3 rounded-2xl border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-900/40 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
@@ -170,7 +169,6 @@ export function SurahList({ surahs }: SurahListProps) {
             {/* Search History Dropdown */}
             {showHistory && hasHistory && !searchQuery && (
               <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl z-50 overflow-hidden">
-                {/* Header */}
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800">
                   <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                     <History className="h-3.5 w-3.5" />
@@ -183,7 +181,6 @@ export function SurahList({ surahs }: SurahListProps) {
                     Clear all
                   </button>
                 </div>
-                {/* History Items */}
                 <ul role="listbox" aria-label="Search history">
                   {searchHistory.map((item) => (
                     <li
@@ -251,6 +248,47 @@ export function SurahList({ surahs }: SurahListProps) {
           </div>
         )}
 
+        {/* Direct Ayah Match Card (e.g. "25:2" or "al fukan 2") */}
+        {directAyahMatch && (
+          <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-emerald-900/15 p-5 shadow-lg dark:border-emerald-500/50">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-black text-lg shadow-md shadow-emerald-500/30">
+                  {directAyahMatch.surah.number}:{directAyahMatch.ayahNumber}
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                      <Sparkles className="h-3 w-3" />
+                      Direct Verse Match
+                    </span>
+                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                      Verse {directAyahMatch.ayahNumber} of {directAyahMatch.surah.numberOfAyahs}
+                    </span>
+                  </div>
+                  <h4 className="font-extrabold text-zinc-900 dark:text-white text-lg mt-1 flex items-center gap-2">
+                    <span>Surah {directAyahMatch.surah.englishName}</span>
+                    <span className="text-sm font-normal text-emerald-600 dark:text-emerald-400 font-arabic">
+                      ({directAyahMatch.surah.name})
+                    </span>
+                  </h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    {directAyahMatch.surah.englishNameTranslation}
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                href={`/surah/${directAyahMatch.surah.number}#ayah-${directAyahMatch.ayahNumber}`}
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-md hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 shrink-0"
+              >
+                <span>Jump to Ayah {directAyahMatch.ayahNumber}</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Grid of Surah Cards */}
         {filteredSurahs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -265,11 +303,11 @@ export function SurahList({ surahs }: SurahListProps) {
               No Surahs Found
             </h3>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
-              No Surah matched &quot;{searchQuery}&quot;. Try a different spelling — e.g. &quot;furqan&quot;, &quot;baqarah&quot;, or search by number.
+              No Surah matched &quot;{searchQuery}&quot;. Try searching by name, number (e.g. 25), or verse (e.g. &quot;25:2&quot;, &quot;furqan 2&quot;).
             </p>
             <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Smart search understands phonetic variations</span>
+              <span>Smart search supports Surah names, numbers, and direct verse references</span>
             </div>
           </div>
         )}
