@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { InitializeLastRead } from "./InitializeLastRead";
 import { ScrollToAyah } from "./ScrollToAyah";
+import { JumpToAyah } from "./JumpToAyah";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -79,46 +80,51 @@ export default async function SurahPage({ params }: PageProps) {
       <InitializeLastRead surahId={surah.number} surahName={surah.englishName} />
       <ScrollToAyah />
 
-      {/* Breadcrumbs / Navigation Header */}
-      <div className="flex items-center justify-between border-b border-zinc-200/50 pb-4 dark:border-zinc-800/50">
-        <Link
-          href="/"
-          className="inline-flex h-9 px-3 items-center gap-1.5 rounded-lg border border-zinc-200/80 bg-white/80 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
-        >
-          <Home className="h-4 w-4" />
-          <span>Home</span>
-        </Link>
+      {/* Sticky Breadcrumbs & Jump to Ayah Navigation Header */}
+      <div className="sticky top-16 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/60 dark:border-zinc-800/60 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md py-3 -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all">
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            className="inline-flex h-9 px-3 items-center gap-1.5 rounded-xl border border-zinc-200/80 bg-white/90 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
+          >
+            <Home className="h-4 w-4" />
+            <span className="hidden sm:inline">Home</span>
+          </Link>
+
+          {/* Jump to Ayah Input */}
+          <JumpToAyah totalAyahs={surah.numberOfAyahs} />
+        </div>
 
         {/* Next/Prev Surah Controls */}
         <div className="flex items-center gap-2">
           {surahId > 1 ? (
             <Link
               href={`/surah/${surahId - 1}`}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200/80 bg-white/80 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white/90 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
               title="Previous Surah"
             >
               <ChevronLeft className="h-5 w-5" />
             </Link>
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200/40 bg-zinc-100/50 text-zinc-300 dark:border-zinc-800/40 dark:bg-zinc-900/30 dark:text-zinc-700 cursor-not-allowed opacity-50">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/40 bg-zinc-100/50 text-zinc-300 dark:border-zinc-800/40 dark:bg-zinc-900/30 dark:text-zinc-700 cursor-not-allowed opacity-50">
               <ChevronLeft className="h-5 w-5" />
             </div>
           )}
 
-          <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 px-2 select-none">
+          <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 px-1 select-none">
             {surahId} / 114
           </span>
 
           {surahId < 114 ? (
             <Link
               href={`/surah/${surahId + 1}`}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200/80 bg-white/80 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/80 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/80 bg-white/90 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/90 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 transition-all active:scale-95 shadow-xs"
               title="Next Surah"
             >
               <ChevronRight className="h-5 w-5" />
             </Link>
           ) : (
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200/40 bg-zinc-100/50 text-zinc-300 dark:border-zinc-800/40 dark:bg-zinc-900/30 dark:text-zinc-700 cursor-not-allowed opacity-50">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200/40 bg-zinc-100/50 text-zinc-300 dark:border-zinc-800/40 dark:bg-zinc-900/30 dark:text-zinc-700 cursor-not-allowed opacity-50">
               <ChevronRight className="h-5 w-5" />
             </div>
           )}
