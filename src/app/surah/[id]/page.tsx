@@ -7,6 +7,7 @@ import { InitializeLastRead } from "./InitializeLastRead";
 import { ScrollToAyah } from "./ScrollToAyah";
 import { JumpToAyah } from "./JumpToAyah";
 import { SurahPlayButton } from "./SurahPlayButton";
+import { SurahSearchBar } from "./SurahSearchBar";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -94,6 +95,9 @@ export default async function SurahPage({ params }: PageProps) {
 
           {/* Jump to Ayah Input */}
           <JumpToAyah totalAyahs={surah.numberOfAyahs} />
+
+          {/* In-Surah / Global Search */}
+          <SurahSearchBar surahId={surahId} surahName={surah.englishName} surahAyahs={surahAyahs} />
         </div>
 
         {/* Next/Prev Surah Controls */}

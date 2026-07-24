@@ -154,7 +154,7 @@ export function AyahShareMenu({ ayah, surahId, surahName }: AyahShareMenuProps) 
 
       {/* Share Popover Menu */}
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl z-50 p-4 animate-in fade-in zoom-in-95 duration-150">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2.5 mb-3">
             <span className="flex items-center gap-1.5 text-xs font-bold text-zinc-900 dark:text-white">
@@ -169,8 +169,8 @@ export function AyahShareMenu({ ayah, surahId, surahName }: AyahShareMenuProps) 
             </button>
           </div>
 
-          {/* Social Media Grid */}
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          {/* Social Media Grid — icons only */}
+          <div className="flex items-center justify-between gap-1.5 mb-3">
             {socialLinks.map((platform) => (
               <a
                 key={platform.name}
@@ -178,10 +178,10 @@ export function AyahShareMenu({ ayah, surahId, surahName }: AyahShareMenuProps) 
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-xs ${platform.bgColor}`}
+                title={platform.name}
+                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-90 shadow-xs flex-shrink-0 ${platform.bgColor}`}
               >
                 {platform.icon}
-                <span className="truncate">{platform.name}</span>
               </a>
             ))}
           </div>

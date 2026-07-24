@@ -163,7 +163,7 @@ export function SurahList({ surahs }: SurahListProps) {
             <input
               id="surah-search-input"
               type="text"
-              placeholder="Search Surah, topic (e.g. azan, women), or verse (25:2)..."
+              placeholder="Search Surah, topic, or verse (25:2)..."
               value={searchQuery}
               autoComplete="off"
               onChange={(e) => setSearchQuery(e.target.value)}
