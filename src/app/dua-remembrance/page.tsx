@@ -26,13 +26,17 @@ import {
   Music, 
   Volume2,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  Share2,
+  Check,
+  X
 } from "lucide-react";
 
 export default function DuaRemembrancePage() {
   const [activeTab, setActiveTab] = useState<"tasbih" | "kalimah" | "sana" | "azan">("tasbih");
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedKalima, setExpandedKalima] = useState<number | null>(1);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   
   // Tasbih Counter state (persisted in localStorage)
   const [counts, setCounts] = useState<Record<string, number>>({});
@@ -296,16 +300,44 @@ export default function DuaRemembrancePage() {
     };
   }, []);
 
-  // Filter Allah names
-  const filteredNames = ALLAH_NAMES.filter(name => {
-    const query = searchQuery.toLowerCase();
-    return (
-      name.transliteration.toLowerCase().includes(query) ||
-      name.english.toLowerCase().includes(query) ||
-      name.bangla.includes(query) ||
-      name.id.toString() === query
-    );
-  });
+  // Global search across all content types
+  const q = searchQuery.toLowerCase().trim();
+
+  const filteredTasbih = TASBIH_AZKAR.filter(a =>
+    !q ||
+    a.transliteration.toLowerCase().includes(q) ||
+    a.english.toLowerCase().includes(q) ||
+    a.bangla.includes(q) ||
+    a.arabic.includes(q)
+  );
+
+  const filteredNames = ALLAH_NAMES.filter(name =>
+    !q ||
+    name.transliteration.toLowerCase().includes(q) ||
+    name.english.toLowerCase().includes(q) ||
+    name.bangla.includes(q) ||
+    name.id.toString() === q
+  );
+
+  const filteredKalimas = KALIMAS.filter(k =>
+    !q ||
+    (k.title || "").toLowerCase().includes(q) ||
+    k.transliteration.toLowerCase().includes(q) ||
+    k.english.toLowerCase().includes(q) ||
+    k.bangla.includes(q)
+  );
+
+  // Share a card's content
+  const handleShare = (type: string, id: string | number, text: string, arabic: string) => {
+    const shareText = `${arabic}\n\n${text}\n\nhttps://tilawa-app.vercel.app/dua-remembrance`;
+    if (navigator.share) {
+      navigator.share({ title: `Tilawa App — ${type}`, text: shareText }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(shareText);
+      setCopiedId(`${type}-${id}`);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-10 animate-fade-in-up">
@@ -321,6 +353,25 @@ export default function DuaRemembrancePage() {
         <p className="text-zinc-500 dark:text-zinc-400 max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
           Recite the 99 names of Allah, perform Tasbihat, learn the Six Kalimas, and listen to Ayatul Kursi and the Azan.
         </p>
+      </div>
+      {/* ── Global Search Bar (before tabs) ── */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Tasbih, Names of Allah, Kalimas, Dua…"
+          className="w-full pl-10 pr-10 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all shadow-xs"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Tabs */}
@@ -382,7 +433,7 @@ export default function DuaRemembrancePage() {
               </h2>
               
               <div className="grid gap-4 sm:grid-cols-2">
-                {TASBIH_AZKAR.map((azkar) => {
+                {filteredTasbih.map((azkar) => {
                   const count = counts[azkar.id] || 0;
                   const isGoalReached = count >= azkar.recommendedCount;
                   
@@ -400,12 +451,21 @@ export default function DuaRemembrancePage() {
                           <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md">
                             Target: {azkar.recommendedCount}
                           </span>
-                          {isGoalReached && (
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                              <Sparkles className="h-3 w-3 animate-pulse" />
-                              Goal Completed!
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {isGoalReached && (
+                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <Sparkles className="h-3 w-3 animate-pulse" />
+                                Done!
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleShare("Tasbih", azkar.id, `${azkar.transliteration} — ${azkar.english}\n${azkar.bangla}`, azkar.arabic)}
+                              className="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                              title="Share"
+                            >
+                              {copiedId === `Tasbih-${azkar.id}` ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
+                            </button>
+                          </div>
                         </div>
                         <p className="text-right text-2xl font-bold text-zinc-800 dark:text-zinc-100 font-amiri leading-normal">
                           {azkar.arabic}
@@ -463,26 +523,12 @@ export default function DuaRemembrancePage() {
 
             {/* Asmaul Husna section */}
             <div className="space-y-6 pt-4 border-t border-zinc-200 dark:border-zinc-850">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 font-bold text-xs">
-                    ✨
-                  </span>
-                  Asmaul Husna (99 Names of Allah)
-                </h2>
-                
-                {/* Search box */}
-                <div className="relative max-w-xs w-full">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search name, meaning..."
-                    className="w-full pl-9 pr-4 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-zinc-900/50 text-sm text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-emerald-500/30"
-                  />
-                </div>
-              </div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-50 dark:bg-rose-950 text-rose-600 dark:text-rose-400 font-bold text-xs">
+                  ✨
+                </span>
+                Asmaul Husna (99 Names of Allah)
+              </h2>
 
               {filteredNames.length === 0 ? (
                 <div className="text-center py-10 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-zinc-400 text-sm">
@@ -499,9 +545,18 @@ export default function DuaRemembrancePage() {
                         <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">
                           #{name.id}
                         </span>
-                        <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-amiri">
-                          {name.arabic}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400 font-amiri">
+                            {name.arabic}
+                          </span>
+                          <button
+                            onClick={() => handleShare("AllahName", name.id, `${name.transliteration} — ${name.english} (${name.bangla})`, name.arabic)}
+                            className="flex h-6 w-6 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                            title="Share"
+                          >
+                            {copiedId === `AllahName-${name.id}` ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <h3 className="text-sm font-extrabold text-zinc-800 dark:text-zinc-200 leading-none">
@@ -525,7 +580,7 @@ export default function DuaRemembrancePage() {
         {/* TAB 2: SIX KALIMAH */}
         {activeTab === "kalimah" && (
           <div className="space-y-4 max-w-3xl mx-auto">
-            {KALIMAS.map((k) => {
+            {filteredKalimas.map((k) => {
               const isExpanded = expandedKalima === k.id;
               return (
                 <div 
@@ -537,11 +592,20 @@ export default function DuaRemembrancePage() {
                     className="w-full flex items-center justify-between p-5 text-left font-bold text-zinc-800 dark:text-zinc-200 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-850/30"
                   >
                     <span>{k.title}</span>
-                    {isExpanded ? (
-                      <ChevronUp className="h-4.5 w-4.5 text-zinc-400" />
-                    ) : (
-                      <ChevronDown className="h-4.5 w-4.5 text-zinc-400" />
-                    )}
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleShare("Kalima", k.id, `${k.title}\n${k.transliteration}\n${k.english}`, k.arabic); }}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                        title="Share"
+                      >
+                        {copiedId === `Kalima-${k.id}` ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
+                      </button>
+                      {isExpanded ? (
+                        <ChevronUp className="h-4.5 w-4.5 text-zinc-400" />
+                      ) : (
+                        <ChevronDown className="h-4.5 w-4.5 text-zinc-400" />
+                      )}
+                    </div>
                   </button>
 
                   {isExpanded && (
