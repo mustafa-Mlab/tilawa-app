@@ -365,16 +365,24 @@ export function SurahList({ surahs }: SurahListProps) {
                   </div>
 
                   {/* Verse Text Snippets */}
-                  {ayah.englishText && (
-                    <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
-                      &quot;{ayah.englishText}&quot;
-                    </p>
-                  )}
-                  {ayah.banglaText && (
-                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mt-1 font-medium">
-                      &quot;{ayah.banglaText}&quot;
-                    </p>
-                  )}
+                  <div className="space-y-1.5 pt-1">
+                    {ayah.englishText && (
+                      <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
+                        <span className="inline-block text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mr-1.5 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200/50 dark:border-emerald-800/40">
+                          English
+                        </span>
+                        &quot;{ayah.englishText}&quot;
+                      </p>
+                    )}
+                    {ayah.banglaText && (
+                      <p className="text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed font-medium">
+                        <span className="inline-block text-[10px] font-bold tracking-wider text-teal-600 dark:text-teal-400 mr-1.5 bg-teal-50 dark:bg-teal-950/40 px-1.5 py-0.5 rounded border border-teal-200/50 dark:border-teal-800/40">
+                          বাংলা
+                        </span>
+                        &quot;{ayah.banglaText}&quot;
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

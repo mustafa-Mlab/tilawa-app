@@ -134,7 +134,6 @@ export async function searchAyahsFullText(
   if (!clean || clean.length < 2) return [];
 
   const searchTerms = expandSearchTerms(clean);
-  // Limit to max 3 search terms to keep API requests fast
   const targetTerms = searchTerms.slice(0, 3);
 
   const resultsMap = new Map<number, AyahSearchResult>();
@@ -151,7 +150,6 @@ export async function searchAyahsFullText(
         const json = await res.json();
 
         if (json.data && Array.isArray(json.data.matches)) {
-          // Take top 15 matches per term
           const matches = json.data.matches.slice(0, 15);
           for (const m of matches) {
             const key = m.number; // global ayah number
@@ -197,7 +195,37 @@ export async function searchAyahsFullText(
     })
   );
 
-  return Array.from(resultsMap.values()).slice(0, 25);
+  const topResults = Array.from(resultsMap.values()).slice(0, 15);
+
+  // Fetch missing translations (e.g. Bangla for English search, or English for Bangla search)
+  await Promise.all(
+    topResults.map(async (item) => {
+      try {
+        if (!item.banglaText) {
+          const res = await fetch(`https://api.alquran.cloud/v1/ayah/${item.globalAyahNumber}/bn.bengali`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data && json.data.text) {
+              item.banglaText = json.data.text;
+            }
+          }
+        }
+        if (!item.englishText) {
+          const res = await fetch(`https://api.alquran.cloud/v1/ayah/${item.globalAyahNumber}/en.sahih`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.data && json.data.text) {
+              item.englishText = json.data.text;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch missing translation for ayah", item.globalAyahNumber, err);
+      }
+    })
+  );
+
+  return topResults;
 }
 
 /**
@@ -225,7 +253,6 @@ export async function executeGlobalSearch<T extends SurahSearchable>(
 
   // 2. Full-text Ayah search in English & Bangla
   let ayahResults: AyahSearchResult[] = [];
-  // Only execute text search if query is at least 2 chars and not just a single number
   if (query.length >= 2 && !/^\d+$/.test(query)) {
     ayahResults = await searchAyahsFullText(query);
   }
