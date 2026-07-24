@@ -6,6 +6,7 @@ import { Metadata } from "next";
 import { InitializeLastRead } from "./InitializeLastRead";
 import { ScrollToAyah } from "./ScrollToAyah";
 import { JumpToAyah } from "./JumpToAyah";
+import { SurahPlayButton } from "./SurahPlayButton";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -165,7 +166,12 @@ export default async function SurahPage({ params }: PageProps) {
           </div>
 
           {/* Right Side: Arabic Name & Full Recitation Play button */}
-          <div className="flex flex-col items-start md:items-end gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <SurahPlayButton
+              surahId={surahId}
+              surahName={surah.englishName}
+              surahAyahs={surahAyahs}
+            />
             <span
               className="text-4xl md:text-5xl font-extrabold font-arabic text-emerald-600 dark:text-emerald-400 tracking-normal"
               dir="rtl"

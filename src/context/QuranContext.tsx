@@ -69,6 +69,12 @@ interface QuranContextProps {
     ayahNumberInSurah: number,
     surahId: number,
     surahName: string,
+    surahAyahs: AyahDetail[],
+    fromStart?: boolean
+  ) => void;
+  playFullSurah: (
+    surahId: number,
+    surahName: string,
     surahAyahs: AyahDetail[]
   ) => void;
   pauseAudio: () => void;
@@ -289,7 +295,8 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     ayahNumberInSurah: number,
     surahId: number,
     surahName: string,
-    surahAyahs: AyahDetail[]
+    surahAyahs: AyahDetail[],
+    fromStart = false
   ) => {
     if (!audioRef.current) return;
 
@@ -297,7 +304,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     setActiveSurahAyahs(surahAyahs);
 
     // If it's already the same ayah, toggle play/pause
-    if (currentAyahNumber === ayahNumber) {
+    if (currentAyahNumber === ayahNumber && !fromStart) {
       if (isIntroSpeakingRef.current) {
         if (isPlaying) {
           window.speechSynthesis.pause();
@@ -327,8 +334,8 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
     setCurrentAyahNumberInSurah(ayahNumberInSurah);
     updateLastRead(surahId, surahName, ayahNumberInSurah);
 
-    // If starting a Surah from the beginning (Ayah 1):
-    if (ayahNumberInSurah === 1) {
+    // Only play intro announcement if explicitly requested (Play Full Surah button)
+    if (fromStart && ayahNumberInSurah === 1) {
       setIsPlaying(true);
       isIntroSpeakingRef.current = true;
 
@@ -338,8 +345,6 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
           const speechText = `Surah ${surahName}. It is a ${type} Surah.`;
           
           const utterance = new SpeechSynthesisUtterance(speechText);
-          
-          // Select a high-quality male voice (Alex/Daniel on macOS, Google UK Male, or Microsoft David on Windows)
           const voices = window.speechSynthesis.getVoices();
           const maleVoice = 
             voices.find(v => v.name.toLowerCase().includes("google uk english male")) ||
@@ -357,13 +362,11 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
             utterance.lang = "en-US";
           }
 
-          utterance.rate = 0.85; // Slightly slower, more solemn and natural
-          utterance.pitch = 0.95; // Slightly deeper pitch
+          utterance.rate = 0.85;
+          utterance.pitch = 0.95;
           
           utterance.onend = () => {
             isIntroSpeakingRef.current = false;
-            
-            // After speech finishes, play Bismillah (global Ayah 1) for all Surahs except Al-Fatiha (1) and At-Tawbah (9)
             const needsBismillah = surahId !== 1 && surahId !== 9;
             if (needsBismillah) {
               isBismillahPlayingRef.current = true;
@@ -396,8 +399,19 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
           playActualFirstAyah(ayahNumber);
         });
     } else {
-      // Normal Ayah playback
+      // Direct Ayah playback
       playActualFirstAyah(ayahNumber);
+    }
+  };
+
+  const playFullSurah = (
+    surahId: number,
+    surahName: string,
+    surahAyahs: AyahDetail[]
+  ) => {
+    if (surahAyahs && surahAyahs.length > 0) {
+      const first = surahAyahs[0];
+      playAyah(first.number, 1, surahId, surahName, surahAyahs, true);
     }
   };
 
@@ -614,6 +628,7 @@ export function QuranProvider({ children }: { children: React.ReactNode }) {
         bookmarks,
         lastRead,
         playAyah,
+        playFullSurah,
         pauseAudio,
         resumeAudio,
         stopAudio,

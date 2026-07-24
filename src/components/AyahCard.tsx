@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { AyahDetail } from "@/lib/quran";
 import { Play, Pause, Bookmark, Copy, Check, BookOpen } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
+import { AyahShareMenu } from "./AyahShareMenu";
 
 interface AyahCardProps {
   ayah: AyahDetail;
@@ -172,6 +173,9 @@ export function AyahCard({ ayah, surahId, surahName, surahAyahs }: AyahCardProps
           >
             {copied ? <Check className="h-4 w-4 text-emerald-500 stroke-[2.5]" /> : <Copy className="h-4 w-4" />}
           </button>
+
+          {/* Social Media Share Menu */}
+          <AyahShareMenu ayah={ayah} surahId={surahId} surahName={surahName} />
 
           {/* Tafsir Button */}
           <button
