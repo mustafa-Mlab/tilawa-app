@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SurahInfo } from "@/lib/quran";
 import { fuzzySearchSurahs } from "@/lib/surahSearch";
+import { searchAyahsFullText, AyahSearchResult } from "@/lib/globalSearch";
 import { SurahCard } from "./SurahCard";
-import { Search, BookOpen, Clock, ChevronRight, Sparkles, History, X, ArrowRight } from "lucide-react";
+import { Search, BookOpen, Clock, ChevronRight, Sparkles, History, X, ArrowRight, Loader2, FileText } from "lucide-react";
 import { useQuran } from "@/context/QuranContext";
 import Link from "next/link";
 
@@ -37,6 +38,10 @@ export function SurahList({ surahs }: SurahListProps) {
   const [showHistory, setShowHistory] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
+  // Full-Text Ayah Search state
+  const [ayahResults, setAyahResults] = useState<AyahSearchResult[]>([]);
+  const [isSearchingAyahs, setIsSearchingAyahs] = useState(false);
+
   // Load history from localStorage on mount
   useEffect(() => {
     setSearchHistory(loadHistory());
@@ -52,6 +57,30 @@ export function SurahList({ surahs }: SurahListProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Debounced Full-Text Ayah search (e.g. "azan", "women", "girl", "meye", "fasting", "roza")
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q || q.length < 2 || /^\d+$/.test(q)) {
+      setAyahResults([]);
+      setIsSearchingAyahs(false);
+      return;
+    }
+
+    setIsSearchingAyahs(true);
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchAyahsFullText(q);
+        setAyahResults(results);
+      } catch (err) {
+        console.error("Ayah text search error:", err);
+      } finally {
+        setIsSearchingAyahs(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Commit a search query to history when user stops typing (on blur or Enter)
   const commitToHistory = useCallback((query: string) => {
@@ -85,7 +114,7 @@ export function SurahList({ surahs }: SurahListProps) {
     setShowHistory(false);
   };
 
-  // Fuzzy / phonetic & Ayah search (e.g. "25:2", "al fukan 2", "furqan:2")
+  // Fuzzy / phonetic & Ayah number search (e.g. "25:2", "al fukan 2", "furqan:2")
   const { surahs: filteredSurahs, directAyahMatch } = fuzzySearchSurahs(surahs, searchQuery, filterType);
 
   const hasHistory = searchHistory.length > 0;
@@ -134,7 +163,7 @@ export function SurahList({ surahs }: SurahListProps) {
             <input
               id="surah-search-input"
               type="text"
-              placeholder="Search Surah by name, number, or verse (e.g. 25:2)..."
+              placeholder="Search Surah, topic (e.g. azan, women), or verse (25:2)..."
               value={searchQuery}
               autoComplete="off"
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -155,16 +184,21 @@ export function SurahList({ surahs }: SurahListProps) {
               }}
               className="w-full pl-11 pr-10 py-3 rounded-2xl border border-zinc-200 bg-white/80 dark:border-zinc-800 dark:bg-zinc-900/40 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-200"
             />
-            {/* Clear button */}
-            {searchQuery && (
-              <button
-                onClick={() => { setSearchQuery(""); setShowHistory(true); }}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            )}
+            {/* Loading / Clear indicator */}
+            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+              {isSearchingAyahs && (
+                <Loader2 className="h-4 w-4 text-emerald-500 animate-spin" />
+              )}
+              {searchQuery && (
+                <button
+                  onClick={() => { setSearchQuery(""); setShowHistory(true); }}
+                  className="h-5 w-5 flex items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
 
             {/* Search History Dropdown */}
             {showHistory && hasHistory && !searchQuery && (
@@ -289,6 +323,73 @@ export function SurahList({ surahs }: SurahListProps) {
           </div>
         )}
 
+        {/* Full-Text Ayah Search Results Section (e.g. "azan", "women", "fasting", "roza") */}
+        {ayahResults.length > 0 && (
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                <FileText className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Matching Verses ({ayahResults.length})</span>
+              </h3>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                Mentioning &quot;{searchQuery}&quot;
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3">
+              {ayahResults.map((ayah) => (
+                <div
+                  key={ayah.globalAyahNumber}
+                  className="group relative flex flex-col p-4 rounded-2xl border border-zinc-200/80 bg-white/90 dark:border-zinc-800/80 dark:bg-zinc-900/40 hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all shadow-xs"
+                >
+                  <div className="flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800/60 pb-2.5 mb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-7 px-2 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 font-bold text-xs">
+                        {ayah.surahNumber}:{ayah.numberInSurah}
+                      </span>
+                      <span className="font-bold text-zinc-900 dark:text-white text-sm">
+                        Surah {ayah.surahEnglishName}
+                      </span>
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500 hidden sm:inline">
+                        ({ayah.surahEnglishTranslation})
+                      </span>
+                    </div>
+
+                    <Link
+                      href={`/surah/${ayah.surahNumber}#ayah-${ayah.numberInSurah}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors"
+                    >
+                      <span>Read Verse</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+
+                  {/* Verse Text Snippets */}
+                  {ayah.englishText && (
+                    <p className="text-xs text-zinc-800 dark:text-zinc-200 leading-relaxed font-medium">
+                      &quot;{ayah.englishText}&quot;
+                    </p>
+                  )}
+                  {ayah.banglaText && (
+                    <p className="text-xs text-zinc-600 dark:text-zinc-400 leading-relaxed mt-1 font-medium">
+                      &quot;{ayah.banglaText}&quot;
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section Header for Surah Cards Grid */}
+        {searchQuery && (
+          <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800/60">
+            <h3 className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
+              Surah Matches ({filteredSurahs.length})
+            </h3>
+          </div>
+        )}
+
         {/* Grid of Surah Cards */}
         {filteredSurahs.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -297,19 +398,21 @@ export function SurahList({ surahs }: SurahListProps) {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
-            <BookOpen className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-4 stroke-1 animate-pulse" />
-            <h3 className="font-bold text-zinc-800 dark:text-zinc-200 text-lg">
-              No Surahs Found
-            </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
-              No Surah matched &quot;{searchQuery}&quot;. Try searching by name, number (e.g. 25), or verse (e.g. &quot;25:2&quot;, &quot;furqan 2&quot;).
-            </p>
-            <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Smart search supports Surah names, numbers, and direct verse references</span>
+          !isSearchingAyahs && ayahResults.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800">
+              <BookOpen className="h-12 w-12 text-zinc-300 dark:text-zinc-700 mb-4 stroke-1 animate-pulse" />
+              <h3 className="font-bold text-zinc-800 dark:text-zinc-200 text-lg">
+                No Results Found
+              </h3>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1 max-w-xs">
+                No Surah or Verse matched &quot;{searchQuery}&quot;. Try searching by topic (e.g. &quot;azan&quot;, &quot;women&quot;, &quot;fasting&quot;) or verse number (e.g. &quot;25:2&quot;).
+              </p>
+              <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Global search supports English, Bangla, and topic keywords</span>
+              </div>
             </div>
-          </div>
+          )
         )}
       </section>
     </div>
