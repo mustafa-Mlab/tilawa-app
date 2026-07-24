@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
-import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages, Music, Play, Repeat, Heart } from "lucide-react";
+import { BookOpen, Settings, Sliders, Type, Check, Bookmark, Languages, Music, Play, Repeat, Heart, Share2 } from "lucide-react";
 import { useQuran, RECITERS } from "@/context/QuranContext";
 import { ThemeToggle } from "./ThemeToggle";
+import { NavSearchBar } from "./NavSearchBar";
 
 export function Navbar() {
   const {
@@ -319,6 +320,25 @@ export function Navbar() {
           )}
 
           {/* Dark Mode Switcher */}
+          <NavSearchBar />
+
+          {/* Share App Button */}
+          <button
+            onClick={() => {
+              const url = typeof window !== "undefined" ? window.location.origin : "https://tilawa-app.vercel.app";
+              if (navigator.share) {
+                navigator.share({ title: "Tilawa App — Read & Listen Quran", url }).catch(() => {});
+              } else {
+                navigator.clipboard.writeText(url);
+              }
+            }}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200/80 bg-white/80 text-zinc-600 hover:bg-zinc-50 dark:bg-zinc-900/80 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800 shadow-xs hover:scale-105 active:scale-95 transition-all"
+            aria-label="Share App"
+            title="Share this app"
+          >
+            <Share2 className="h-4.5 w-4.5" />
+          </button>
+
           <ThemeToggle />
         </div>
       </div>
